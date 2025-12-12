@@ -23,18 +23,22 @@ async function initApp() {
 
     try {
         // 1. Inicializar UI (sidebar, tabs, notificações)
+        console.log('1️⃣ Iniciando UI...');
         initUI();
         console.log('✓ UI inicializada');
 
         // 2. Carregar dados iniciais
+        console.log('2️⃣ Carregando dados iniciais...');
         await carregarDadosIniciais();
         console.log('✓ Dados iniciais carregados');
 
         // 3. Inicializar módulos de entidades
+        console.log('3️⃣ Inicializando módulo de empresas...');
         await initEmpresas();
         console.log('✓ Módulo de Empresas inicializado');
 
         // 4. Configurar observadores de estado
+        console.log('4️⃣ Configurando observadores...');
         setupStateObservers();
         console.log('✓ Observadores configurados');
 
@@ -44,6 +48,7 @@ async function initApp() {
 
     } catch (error) {
         console.error('❌ Erro ao inicializar aplicação:', error);
+        console.error('Stack:', error.stack);
         alert('Erro ao inicializar a aplicação. Verifique o console para mais detalhes.');
     }
 }
@@ -52,6 +57,7 @@ async function initApp() {
  * Carrega dados iniciais de todas as entidades
  */
 async function carregarDadosIniciais() {
+    console.log('  → Carregando empresas...');
     const promises = [
         carregarEmpresas(),
         // Adicionar carregamento de outras entidades aqui quando prontas:
@@ -61,6 +67,7 @@ async function carregarDadosIniciais() {
     ];
 
     await Promise.all(promises);
+    console.log('  → Todas as promises resolvidas');
 }
 
 /**
