@@ -42,29 +42,40 @@ export async function fetchAPI(endpoint, options = {}) {
             fullUrl += (fullUrl.includes('?') ? '&' : '?') + 'id=' + options.id;
         }
 
-        // Fazer requisição
-        const response = await fetch(fullUrl, config);
+        // Fazer requisição com timeout de 10 segundos
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-        // Verificar se a resposta é JSON
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-            console.error('Resposta não é JSON:', await response.text());
-            throw new Error('Resposta inválida do servidor');
+        try {
+            const response = await fetch(fullUrl, { ...config, signal: controller.signal });
+            clearTimeout(timeoutId);
+
+            // Verificar se a resposta é JSON
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                const text = await response.text();
+                console.error('Resposta não é JSON:', text);
+                throw new Error('Resposta inválida do servidor');
+            }
+
+            const result = await response.json();
+
+            // Log para debug em desenvolvimento
+            if (!API_CONFIG.isProduction) {
+                console.log(`[API ${config.method}] ${fullUrl}`, {
+                    options,
+                    response: result
+                });
+            }
+
+            return result;
+        } catch (fetchError) {
+            clearTimeout(timeoutId);
+            if (fetchError.name === 'AbortError') {
+                throw new Error('Timeout: servidor não respondeu em 10 segundos');
+            }
+            throw fetchError;
         }
-
-        // Parse da resposta
-        const result = await response.json();
-
-        // Log para debug em desenvolvimento
-        if (!API_CONFIG.isProduction) {
-            console.log(`[API ${config.method}] ${fullUrl}`, {
-                options,
-                response: result
-            });
-        }
-
-        // Retornar resultado
-        return result;
 
     } catch (error) {
         console.error('[API ERROR]', error);
