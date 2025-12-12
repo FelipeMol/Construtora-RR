@@ -46,9 +46,23 @@ async function initApp() {
         console.log('✅ Aplicação iniciada com sucesso!');
         store.debug();
 
+        // 6. Remover loading inicial do HTML
+        const loadingGlobal = document.getElementById('loading-global');
+        if (loadingGlobal) {
+            loadingGlobal.style.display = 'none';
+            console.log('✓ Loading inicial removido');
+        }
+
     } catch (error) {
         console.error('❌ Erro ao inicializar aplicação:', error);
         console.error('Stack:', error.stack);
+
+        // Remover loading mesmo em caso de erro
+        const loadingGlobal = document.getElementById('loading-global');
+        if (loadingGlobal) {
+            loadingGlobal.style.display = 'none';
+        }
+
         alert('Erro ao inicializar a aplicação. Verifique o console para mais detalhes.');
     }
 }
