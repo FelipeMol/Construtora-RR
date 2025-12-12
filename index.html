@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Obras e Funcionários</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏗️</text></svg>">
+    <link rel="stylesheet" href="styles.css?v=4.0">
+</head>
+<body>
+    <!-- Header com Logo e Toggle -->
+    <div class="header">
+        <div class="header-left">
+            <button class="menu-toggle" onclick="toggleSidebar()" title="Menu">
+                <span class="hamburger"></span>
+                <span class="hamburger"></span>
+                <span class="hamburger"></span>
+            </button>
+            <img src="assets/logo.png" alt="Logo" class="header-logo" onerror="this.style.display='none'">
+            <h1>Controle de Obras</h1>
+        </div>
+        <div class="header-right">
+            <span class="user-info" id="data-hoje"></span>
+            <span class="user-info">👤 Viviane</span>
+        </div>
+    </div>
+
+    <!-- Sidebar Menu -->
+    <aside class="sidebar" id="sidebar">
+        <nav class="sidebar-nav">
+            <div class="sidebar-item" onclick="showTab('dashboard')">
+                <span class="icon">🏠</span>
+                <span class="text">Início</span>
+            </div>
+            
+            <div class="sidebar-item" onclick="showTab('lancamentos')">
+                <span class="icon">📋</span>
+                <span class="text">Lançamentos</span>
+            </div>
+            
+            <div class="sidebar-item submenu-parent" onclick="toggleSubmenu(this)">
+                <span class="icon">📁</span>
+                <span class="text">Cadastros</span>
+                <span class="arrow">▼</span>
+            </div>
+            <div class="submenu">
+                <div class="submenu-item" onclick="showTab('funcionarios')">
+                    <span class="icon">👥</span>
+                    <span class="text">Funcionários</span>
+                </div>
+                <div class="submenu-item" onclick="showTab('obras')">
+                    <span class="icon">🏢</span>
+                    <span class="text">Obras</span>
+                </div>
+                <div class="submenu-item" onclick="showTab('empresas')">
+                    <span class="icon">🏛️</span>
+                    <span class="text">Empresas</span>
+                </div>
+                <div class="submenu-item" onclick="showTab('avaliacoes')">
+                    <span class="icon">⭐</span>
+                    <span class="text">Avaliações</span>
+                </div>
+                <div class="submenu-item" onclick="showTab('projetos')">
+                    <span class="icon">🚧</span>
+                    <span class="text">Projetos</span>
+                </div>
+                <div class="submenu-item" onclick="showTab('usuarios')">
+                    <span class="icon">�</span>
+                    <span class="text">Usuários</span>
+                </div>
+            </div>
+            
+            <div class="sidebar-item" onclick="showTab('base')">
+                <span class="icon">�</span>
+                <span class="text">BASE</span>
+            </div>
+            
+            <div class="sidebar-item" onclick="showTab('relatorios')">
+                <span class="icon">📊</span>
+                <span class="text">Relatórios</span>
+            </div>
+            
+            <div class="sidebar-item" onclick="showTab('configuracoes')">
+                <span class="icon">⚙️</span>
+                <span class="text">Configurações</span>
+            </div>
+            
+            <div class="sidebar-item" onclick="showTab('backup')">
+                <span class="icon">💾</span>
+                <span class="text">Backup</span>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content" id="mainContent">
+        <div class="container-fluid">
+        <!-- Aba Dashboard -->
+        <div id="dashboard" class="tab-content active">
+            <div class="welcome-section">
+                <h1 class="welcome-title">🌟 Bem-vinda, Viviane!</h1>
+                <p class="welcome-subtitle">Painel de Controle - Sistema de Obras e Funcionários</p>
+                <div class="current-time" id="current-time"></div>
+            </div>
+
+            <div class="quick-stats">
+                <div class="quick-stat-item">
+                    <div class="quick-stat-number" id="dash-funcionarios">0</div>
+                    <div class="quick-stat-label">Funcionários Ativos</div>
+                </div>
+                <div class="quick-stat-item">
+                    <div class="quick-stat-number" id="dash-obras">0</div>
+                    <div class="quick-stat-label">Obras em Andamento</div>
+                </div>
+                <div class="quick-stat-item">
+                    <div class="quick-stat-number" id="dash-horas-hoje">0h</div>
+                    <div class="quick-stat-label">Horas Hoje</div>
+                </div>
+                <div class="quick-stat-item">
+                    <div class="quick-stat-number" id="dash-lancamentos-mes">0</div>
+                    <div class="quick-stat-label">Lançamentos este Mês</div>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3 class="chart-title">📊 Top Funcionários (Este Mês)</h3>
+                    <div id="chart-funcionarios" class="simple-chart">
+                        <!-- Barras simples serão geradas aqui -->
+                    </div>
+                </div>
+                
+                <div class="chart-card">
+                    <h3 class="chart-title">🏢 Horas por Obra</h3>
+                    <div id="chart-obras" class="simple-chart">
+                        <!-- Barras simples serão geradas aqui -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="recent-activity">
+                <h3 class="chart-title">📋 Atividade Recente</h3>
+                <div id="recent-activities">
+                    <div class="activity-item">
+                        <div class="activity-time">Hoje, 14:30</div>
+                        <div class="activity-text">Sistema iniciado com sucesso</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Aba Lançamentos Diários -->
+        <div id="lancamentos" class="tab-content">
+            <h2 class="section-title">Lançamentos Diários</h2>
+            <div class="alert alert-info">
+                <strong>💡 Dica:</strong> Digite 08:00 para oito horas; 04:00 para meio turno.
+            </div>
+            
+            <form id="form-lancamento">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="lancamento-data">Data</label>
+                        <input type="date" id="lancamento-data" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="lancamento-funcionario">Funcionário</label>
+                        <select id="lancamento-funcionario" required>
+                            <option value="">Selecione...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="lancamento-funcao">Função</label>
+                        <input type="text" id="lancamento-funcao" readonly>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="lancamento-empresa">Empresa</label>
+                        <input type="text" id="lancamento-empresa" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="lancamento-obra">Obra</label>
+                        <select id="lancamento-obra" required>
+                            <option value="">Selecione...</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="campo-horas">
+                        <label for="lancamento-horas">Horas (HH:MM)</label>
+                        <input type="time" id="lancamento-horas" value="08:00">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="lancamento-observacao">Observação</label>
+                    <textarea id="lancamento-observacao" rows="2" placeholder="Observações opcionais..."></textarea>
+                </div>
+                
+                <button type="submit" class="btn btn-success">➕ Adicionar Lançamento</button>
+            </form>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Funcionário</th>
+                            <th>Função</th>
+                            <th>Empresa</th>
+                            <th>Obra</th>
+                            <th>Horas</th>
+                            <th>Observação</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-lancamentos"></tbody>
+                </table>
+            </div>
+
+            <!-- Modal de Edição de Lançamento -->
+            <div id="modal-editar-lancamento" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2>✏️ Editar Lançamento</h2>
+                        <button class="modal-close" onclick="fecharModalLancamento()">&times;</button>
+                    </div>
+                    <form id="form-editar-lancamento" onsubmit="salvarEdicaoLancamento(event)">
+                        <input type="hidden" id="edit-lancamento-id">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="edit-lancamento-data">Data</label>
+                                <input type="date" id="edit-lancamento-data" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-lancamento-funcionario">Funcionário</label>
+                                <select id="edit-lancamento-funcionario" required>
+                                    <option value="">Selecione...</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="edit-lancamento-funcao">Função</label>
+                                <input type="text" id="edit-lancamento-funcao">
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-lancamento-empresa">Empresa</label>
+                                <select id="edit-lancamento-empresa">
+                                    <option value="">Selecione...</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="edit-lancamento-obra">Obra</label>
+                                <select id="edit-lancamento-obra">
+                                    <option value="">Selecione...</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-lancamento-horas">Horas</label>
+                                <input type="time" id="edit-lancamento-horas" value="08:00">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="edit-lancamento-observacao">Observação</label>
+                                <input type="text" id="edit-lancamento-observacao">
+                            </div>
+                        </div>
+                        <div class="modal-actions">
+                            <button type="submit" class="btn btn-primary">💾 Salvar Alterações</button>
+                            <button type="button" class="btn btn-danger" onclick="fecharModalLancamento()">❌ Cancelar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Aba Funcionários -->
+        <div id="funcionarios" class="tab-content">
+            <h2 class="section-title">Funcionários</h2>
+            
+            <form id="form-funcionario">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="funcionario-nome">Nome do Funcionário</label>
+                        <input type="text" id="funcionario-nome" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="funcionario-funcao">Função</label>
+                        <select id="funcionario-funcao" required>
+                            <option value="">Selecione...</option>
+                            <option value="SERVENTE">SERVENTE</option>
+                            <option value="PEDREIRO 01">PEDREIRO 01</option>
+                            <option value="PEDREIRO 02">PEDREIRO 02</option>
+                            <option value="PEDREIRO 03">PEDREIRO 03</option>
+                            <option value="PINTOR">PINTOR</option>
+                            <option value="PINTOR CHEFE">PINTOR CHEFE</option>
+                            <option value="ARMADOR">ARMADOR</option>
+                            <option value="CARPINTEIRO">CARPINTEIRO</option>
+                            <option value="MEIO-OFICIAL">MEIO-OFICIAL</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="funcionario-empresa">Empresa</label>
+                        <select id="funcionario-empresa" required>
+                            <option value="">Selecione...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="funcionario-situacao">Situação</label>
+                        <select id="funcionario-situacao" required>
+                            <option value="">Selecione...</option>
+                            <option value="Ativo">Ativo</option>
+                            <option value="Inativo">Inativo</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-success">➕ Adicionar Funcionário</button>
+            </form>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Funcionário</th>
+                            <th>Função</th>
+                            <th>Empresa</th>
+                            <th>Situação</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-funcionarios"></tbody>
+                </table>
+            </div>
+
+            <!-- Modal de Edição de Funcionário -->
+            <div id="modal-editar-funcionario" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2>✏️ Editar Funcionário</h2>
+                        <button class="modal-close" onclick="fecharModalFuncionario()">&times;</button>
+                    </div>
+                    <form id="form-editar-funcionario" onsubmit="salvarEdicaoFuncionario(event)">
+                        <input type="hidden" id="edit-funcionario-id">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="edit-funcionario-nome">Nome do Funcionário</label>
+                                <input type="text" id="edit-funcionario-nome" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-funcionario-funcao">Função</label>
+                                <select id="edit-funcionario-funcao" required>
+                                    <option value="SERVENTE">SERVENTE</option>
+                                    <option value="PEDREIRO 01">PEDREIRO 01</option>
+                                    <option value="PEDREIRO 02">PEDREIRO 02</option>
+                                    <option value="PEDREIRO 03">PEDREIRO 03</option>
+                                    <option value="PINTOR">PINTOR</option>
+                                    <option value="PINTOR CHEFE">PINTOR CHEFE</option>
+                                    <option value="ARMADOR">ARMADOR</option>
+                                    <option value="CARPINTEIRO">CARPINTEIRO</option>
+                                    <option value="MEIO-OFICIAL">MEIO-OFICIAL</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="edit-funcionario-empresa">Empresa</label>
+                                <select id="edit-funcionario-empresa" required>
+                                    <option value="">Selecione...</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-funcionario-situacao">Situação</label>
+                                <select id="edit-funcionario-situacao" required>
+                                    <option value="">Selecione...</option>
+                                    <option value="Ativo">Ativo</option>
+                                    <option value="Inativo">Inativo</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="modal-actions">
+                            <button type="submit" class="btn btn-primary">💾 Salvar Alterações</button>
+                            <button type="button" class="btn btn-danger" onclick="fecharModalFuncionario()">❌ Cancelar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Aba Obras -->
+        <div id="obras" class="tab-content">
+            <h2 class="section-title">Obras</h2>
+            
+            <form id="form-obra">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="obra-nome">Nome da Obra</label>
+                        <input type="text" id="obra-nome" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="obra-responsavel">Responsável</label>
+                        <input type="text" id="obra-responsavel" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="obra-cidade">Cidade</label>
+                        <input type="text" id="obra-cidade" required>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-success">➕ Adicionar Obra</button>
+            </form>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Obra</th>
+                            <th>Responsável</th>
+                            <th>Cidade</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-obras"></tbody>
+                </table>
+            </div>
+
+            <!-- Modal de Edição de Obra -->
+            <div id="modal-editar-obra" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2>✏️ Editar Obra</h2>
+                        <button class="modal-close" onclick="fecharModalObra()">&times;</button>
+                    </div>
+                    <form id="form-editar-obra" onsubmit="salvarEdicaoObra(event)">
+                        <input type="hidden" id="edit-obra-id">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="edit-obra-nome">Nome da Obra</label>
+                                <input type="text" id="edit-obra-nome" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-obra-responsavel">Responsável</label>
+                                <input type="text" id="edit-obra-responsavel">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-obra-cidade">Cidade</label>
+                            <input type="text" id="edit-obra-cidade">
+                        </div>
+                        <div class="modal-actions">
+                            <button type="submit" class="btn btn-primary">💾 Salvar Alterações</button>
+                            <button type="button" class="btn btn-danger" onclick="fecharModalObra()">❌ Cancelar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Aba Empresas -->
+        <div id="empresas" class="tab-content">
+            <h2 class="section-title">Empresas</h2>
+            
+            <form id="form-empresa">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="empresa-nome">Nome da Empresa</label>
+                        <input type="text" id="empresa-nome" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="empresa-cnpj">CNPJ</label>
+                        <input type="text" id="empresa-cnpj" required placeholder="00.000.000/0001-00">
+                    </div>
+                    <div class="form-group">
+                        <label for="empresa-tipo">Tipo</label>
+                        <select id="empresa-tipo" required>
+                            <option value="">Selecione...</option>
+                            <option value="Construtora">Construtora</option>
+                            <option value="SPE">SPE</option>
+                            <option value="Serviços">Serviços</option>
+                            <option value="Outros">Outros</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-success">➕ Adicionar Empresa</button>
+            </form>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nome da Empresa</th>
+                            <th>CNPJ</th>
+                            <th>Tipo</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-empresas"></tbody>
+                </table>
+            </div>
+
+            <!-- Modal de Edição de Empresa -->
+            <div id="modal-editar-empresa" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2>✏️ Editar Empresa</h2>
+                        <button class="modal-close" onclick="fecharModalEmpresa()">&times;</button>
+                    </div>
+                    <form id="form-editar-empresa" onsubmit="salvarEdicaoEmpresa(event)">
+                        <input type="hidden" id="edit-empresa-id">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="edit-empresa-nome">Nome da Empresa</label>
+                                <input type="text" id="edit-empresa-nome" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-empresa-cnpj">CNPJ</label>
+                                <input type="text" id="edit-empresa-cnpj">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-empresa-tipo">Tipo</label>
+                            <select id="edit-empresa-tipo" required>
+                                <option value="Construtora">Construtora</option>
+                                <option value="Subempreiteira">Subempreiteira</option>
+                                <option value="Fornecedor">Fornecedor</option>
+                                <option value="Outro">Outro</option>
+                            </select>
+                        </div>
+                        <div class="modal-actions">
+                            <button type="submit" class="btn btn-primary">💾 Salvar Alterações</button>
+                            <button type="button" class="btn btn-danger" onclick="fecharModalEmpresa()">❌ Cancelar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+
+
+        <!-- Aba BASE -->
+        <div id="base" class="tab-content">
+            <h2 class="section-title">BASE - Consolidação Automática</h2>
+            <p class="alert alert-info">Esta aba consolida automaticamente os dados dos Lançamentos Diários.</p>
+            
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Origem</th>
+                            <th>Data</th>
+                            <th>Funcionário</th>
+                            <th>Função</th>
+                            <th>Empresa</th>
+                            <th>Obra</th>
+                            <th>Horas</th>
+                            <th>Mês</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-base"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Aba Relatórios -->
+        <div id="relatorios" class="tab-content">
+            <div class="rel-container">
+                <!-- Header com título e ações -->
+                <div class="rel-header">
+                    <div>
+                        <h2 class="section-title" style="margin: 0;">📊 Relatório Inteligente</h2>
+                        <p class="rel-subtitle">Análise visual de horas trabalhadas</p>
+                    </div>
+                    <div class="rel-actions">
+                        <button class="btn btn-secondary" id="btn-exportar-relatorio">
+                            <span>📥 Exportar</span>
+                        </button>
+                        <button class="btn btn-secondary" id="btn-imprimir-relatorio">
+                            <span>🖨️ Imprimir</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Cards de estatísticas -->
+                <div class="rel-stats-grid">
+                    <div class="rel-stat-card">
+                        <div class="rel-stat-icon">👥</div>
+                        <div class="rel-stat-content">
+                            <div class="rel-stat-value" id="rel-total-funcionarios">0</div>
+                            <div class="rel-stat-label">Funcionários</div>
+                        </div>
+                    </div>
+                    <div class="rel-stat-card">
+                        <div class="rel-stat-icon">🏢</div>
+                        <div class="rel-stat-content">
+                            <div class="rel-stat-value" id="rel-total-obras">0</div>
+                            <div class="rel-stat-label">Obras</div>
+                        </div>
+                    </div>
+                    <div class="rel-stat-card rel-stat-card-highlight">
+                        <div class="rel-stat-icon">⏱️</div>
+                        <div class="rel-stat-content">
+                            <div class="rel-stat-value" id="rel-total-horas">0h</div>
+                            <div class="rel-stat-label">Total de Horas</div>
+                        </div>
+                    </div>
+                    <div class="rel-stat-card">
+                        <div class="rel-stat-icon">📋</div>
+                        <div class="rel-stat-content">
+                            <div class="rel-stat-value" id="rel-total-lancamentos">0</div>
+                            <div class="rel-stat-label">Lançamentos</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seletor de período -->
+                <div class="rel-periodo-section">
+                    <label class="rel-periodo-label">📅 Período</label>
+                    <div class="rel-periodo-presets">
+                        <button class="rel-preset-btn active" data-preset="7dias">Últimos 7 dias</button>
+                        <button class="rel-preset-btn" data-preset="mes">Este mês</button>
+                        <button class="rel-preset-btn" data-preset="custom">Personalizado</button>
+                    </div>
+                    <div class="rel-periodo-custom" id="rel-periodo-custom" style="display: none;">
+                        <input type="date" id="rel-data-inicio" class="rel-date-input">
+                        <span style="color: #666; margin: 0 0.5rem;">até</span>
+                        <input type="date" id="rel-data-fim" class="rel-date-input">
+                        <button class="btn btn-primary btn-sm" id="btn-aplicar-periodo">Aplicar</button>
+                    </div>
+                </div>
+
+                <!-- Seletor de visualização (tabs) -->
+                <div class="rel-view-selector">
+                    <button class="view-tab active" data-view="top-funcionarios">
+                        <span class="view-tab-icon">🏆</span>
+                        <span class="view-tab-label">Top Funcionários</span>
+                    </button>
+                    <button class="view-tab" data-view="por-obra">
+                        <span class="view-tab-icon">🏢</span>
+                        <span class="view-tab-label">Por Obra</span>
+                    </button>
+                    <button class="view-tab" data-view="por-dia">
+                        <span class="view-tab-icon">📅</span>
+                        <span class="view-tab-label">Por Dia</span>
+                    </button>
+                </div>
+
+                <!-- Seção de filtros com chips -->
+                <div class="rel-filters-section">
+                    <div class="rel-filters-header">
+                        <label>🔍 Filtros</label>
+                        <button class="btn-add-filter" id="btn-add-filter">+ Adicionar filtro</button>
+                    </div>
+                    <div class="rel-chips-container" id="rel-chips-container">
+                        <!-- Chips dinâmicos serão inseridos aqui -->
+                    </div>
+                </div>
+
+                <!-- Área de visualização -->
+                <div class="rel-visualization-area" id="rel-visualization-area">
+                    <!-- Conteúdo dinâmico das visualizações -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Aba Avaliações -->
+        <div id="avaliacoes" class="tab-content">
+            <div class="aval-container">
+                <!-- Header com título e ações -->
+                <div class="aval-header">
+                    <div>
+                        <h2 class="section-title" style="margin: 0;">⭐ Avaliação de Desempenho</h2>
+                        <p class="aval-subtitle">Acompanhe e melhore a performance da sua equipe</p>
+                    </div>
+                    <div class="aval-actions">
+                        <button class="btn btn-secondary" id="btn-exportar-avaliacoes">
+                            <span>📥 Exportar</span>
+                        </button>
+                        <button class="btn btn-secondary" id="btn-imprimir-avaliacoes">
+                            <span>🖨️ Imprimir</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Cards de estatísticas -->
+                <div class="aval-stats-grid">
+                    <div class="aval-stat-card">
+                        <div class="aval-stat-icon">👥</div>
+                        <div class="aval-stat-content">
+                            <div class="aval-stat-value" id="aval-total-funcionarios">0</div>
+                            <div class="aval-stat-label">Total de Pessoas</div>
+                        </div>
+                    </div>
+                    <div class="aval-stat-card">
+                        <div class="aval-stat-icon">⭐</div>
+                        <div class="aval-stat-content">
+                            <div class="aval-stat-value" id="aval-media-geral">0.0</div>
+                            <div class="aval-stat-label">Média Geral</div>
+                        </div>
+                    </div>
+                    <div class="aval-stat-card aval-stat-card-success">
+                        <div class="aval-stat-icon">📈</div>
+                        <div class="aval-stat-content">
+                            <div class="aval-stat-value" id="aval-melhoria">+0.0</div>
+                            <div class="aval-stat-label">Melhoria</div>
+                        </div>
+                    </div>
+                    <div class="aval-stat-card aval-stat-card-warning">
+                        <div class="aval-stat-icon">⚠️</div>
+                        <div class="aval-stat-content">
+                            <div class="aval-stat-value" id="aval-atencao">0</div>
+                            <div class="aval-stat-label">Precisam Atenção</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seção de seleção de funcionários -->
+                <div class="aval-selecao-section">
+                    <div class="aval-selecao-header">
+                        <h3>✏️ Fazer Nova Avaliação</h3>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <select id="aval-select-funcionario" class="aval-search-input" style="flex: 1;">
+                                <option value="">👤 Selecione um funcionário...</option>
+                            </select>
+                            <input type="text" id="aval-search-funcionario" placeholder="🔍 Ou buscar por nome..." class="aval-search-input" style="flex: 1;">
+                        </div>
+                    </div>
+                    
+                    <div class="aval-funcionarios-grid" id="aval-funcionarios-grid">
+                        <!-- Cards de funcionários serão inseridos aqui -->
+                    </div>
+                </div>
+
+                <!-- Formulário de avaliação (inicialmente oculto) -->
+                <div class="aval-form-section" id="aval-form-section" style="display: none;">
+                    <!-- Conteúdo do formulário será inserido aqui -->
+                </div>
+
+                <!-- Histórico de avaliações -->
+                <div class="aval-historico-section">
+                    <h3 class="section-title">📊 Histórico de Avaliações</h3>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Funcionário</th>
+                                    <th>Data</th>
+                                    <th>Período</th>
+                                    <th>Média Geral</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabela-avaliacoes"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Aba Projetos -->
+        <div id="projetos" class="tab-content">
+            <h2 class="section-title">🚧 Gestão de Projetos</h2>
+            
+            <form id="form-projeto">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="projeto-nome">Nome do Projeto</label>
+                        <input type="text" id="projeto-nome" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="projeto-cliente">Cliente</label>
+                        <input type="text" id="projeto-cliente" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="projeto-inicio">Data de Início</label>
+                        <input type="date" id="projeto-inicio" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="projeto-prazo">Prazo Final</label>
+                        <input type="date" id="projeto-prazo" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="projeto-orcamento">Orçamento</label>
+                        <input type="number" id="projeto-orcamento" step="0.01" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="projeto-status">Status</label>
+                        <select id="projeto-status" required>
+                            <option value="planejamento">Planejamento</option>
+                            <option value="em-andamento">Em Andamento</option>
+                            <option value="pausado">Pausado</option>
+                            <option value="concluido">Concluído</option>
+                            <option value="cancelado">Cancelado</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="projeto-descricao">Descrição do Projeto</label>
+                    <textarea id="projeto-descricao" rows="3" placeholder="Descreva o projeto, objetivos e escopo..."></textarea>
+                </div>
+                
+                <button type="submit" class="btn btn-success">➕ Criar Projeto</button>
+            </form>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Projeto</th>
+                            <th>Cliente</th>
+                            <th>Início</th>
+                            <th>Prazo</th>
+                            <th>Orçamento</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-projetos"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Aba Usuários -->
+        <div id="usuarios" class="tab-content">
+            <h2 class="section-title">👤 Gerenciamento de Usuários</h2>
+            
+            <!-- Sistema de Login/Cadastro -->
+            <div id="auth-section" class="auth-container">
+                <div class="auth-tabs">
+                    <button class="auth-tab active" onclick="showAuthTab('login')">🔑 Login</button>
+                    <button class="auth-tab" onclick="showAuthTab('cadastro')">📝 Cadastrar</button>
+                </div>
+
+                <!-- Formulário de Login -->
+                <div id="login-form" class="auth-form active">
+                    <h3>Entrar no Sistema</h3>
+                    <form onsubmit="fazerLogin(event)">
+                        <div class="form-group">
+                            <label for="login-email">E-mail</label>
+                            <input type="email" id="login-email" required placeholder="seu@email.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="login-senha">Senha</label>
+                            <input type="password" id="login-senha" required placeholder="Sua senha">
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="login-lembrar"> Lembrar de mim
+                            </label>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-full">🔑 Entrar</button>
+                    </form>
+                    <p class="auth-link">Não tem conta? <a href="#" onclick="showAuthTab('cadastro')">Cadastre-se aqui</a></p>
+                </div>
+
+                <!-- Formulário de Cadastro -->
+                <div id="cadastro-form" class="auth-form">
+                    <h3>Criar Nova Conta</h3>
+                    <form onsubmit="fazerCadastro(event)">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="cadastro-nome">Nome Completo</label>
+                                <input type="text" id="cadastro-nome" required placeholder="Seu nome completo">
+                            </div>
+                            <div class="form-group">
+                                <label for="cadastro-empresa">Empresa</label>
+                                <input type="text" id="cadastro-empresa" required placeholder="Nome da sua empresa">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="cadastro-email">E-mail</label>
+                            <input type="email" id="cadastro-email" required placeholder="seu@email.com">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="cadastro-senha">Senha</label>
+                                <input type="password" id="cadastro-senha" required placeholder="Mínimo 6 caracteres">
+                            </div>
+                            <div class="form-group">
+                                <label for="cadastro-confirma">Confirmar Senha</label>
+                                <input type="password" id="cadastro-confirma" required placeholder="Confirme a senha">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="cadastro-cargo">Cargo/Função</label>
+                            <select id="cadastro-cargo" required>
+                                <option value="">Selecione...</option>
+                                <option value="administrador">Administrador</option>
+                                <option value="gerente">Gerente de Obras</option>
+                                <option value="encarregado">Encarregado</option>
+                                <option value="supervisor">Supervisor</option>
+                                <option value="outros">Outros</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="cadastro-termos" required> 
+                                Aceito os <a href="#" onclick="mostrarTermos()">termos de uso</a>
+                            </label>
+                        </div>
+                        <button type="submit" class="btn btn-success btn-full">📝 Criar Conta</button>
+                    </form>
+                    <p class="auth-link">Já tem conta? <a href="#" onclick="showAuthTab('login')">Faça login aqui</a></p>
+                </div>
+            </div>
+
+            <!-- Área do Usuário Logado -->
+            <div id="user-area" class="user-area" style="display: none;">
+                <div class="user-welcome">
+                    <div class="user-avatar">👤</div>
+                    <div class="user-info">
+                        <h3 id="user-nome">Nome do Usuário</h3>
+                        <p id="user-empresa">Empresa</p>
+                        <p id="user-cargo">Cargo</p>
+                        <small>Último acesso: <span id="user-ultimo-acesso">Agora</span></small>
+                    </div>
+                    <button class="btn btn-danger" onclick="fazerLogout()">🚪 Sair</button>
+                </div>
+
+                <div class="config-grid">
+                    <div class="config-section">
+                        <h3>👤 Editar Perfil</h3>
+                        <form id="form-perfil">
+                            <div class="form-group">
+                                <label for="perfil-nome">Nome</label>
+                                <input type="text" id="perfil-nome">
+                            </div>
+                            <div class="form-group">
+                                <label for="perfil-empresa">Empresa</label>
+                                <input type="text" id="perfil-empresa">
+                            </div>
+                            <div class="form-group">
+                                <label for="perfil-cargo">Cargo</label>
+                                <select id="perfil-cargo">
+                                    <option value="administrador">Administrador</option>
+                                    <option value="gerente">Gerente de Obras</option>
+                                    <option value="encarregado">Encarregado</option>
+                                    <option value="supervisor">Supervisor</option>
+                                    <option value="outros">Outros</option>
+                                </select>
+                            </div>
+                            <button type="button" class="btn btn-primary" onclick="atualizarPerfil()">💾 Salvar</button>
+                        </form>
+                    </div>
+
+                    <div class="config-section">
+                        <h3>🔒 Alterar Senha</h3>
+                        <form id="form-senha">
+                            <div class="form-group">
+                                <label for="senha-atual">Senha Atual</label>
+                                <input type="password" id="senha-atual" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="senha-nova">Nova Senha</label>
+                                <input type="password" id="senha-nova" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="senha-confirma">Confirmar Nova Senha</label>
+                                <input type="password" id="senha-confirma" required>
+                            </div>
+                            <button type="button" class="btn btn-warning" onclick="alterarSenha()">🔒 Alterar</button>
+                        </form>
+                    </div>
+
+                    <div class="config-section">
+                        <h3>📊 Estatísticas do Usuário</h3>
+                        <div class="user-stats">
+                            <div class="stat-item">
+                                <span class="stat-number" id="stat-dias-cadastro">0</span>
+                                <span class="stat-label">Dias cadastrado</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number" id="stat-total-lancamentos">0</span>
+                                <span class="stat-label">Lançamentos feitos</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number" id="stat-avaliacoes-feitas">0</span>
+                                <span class="stat-label">Avaliações realizadas</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number" id="stat-ultimo-backup">Nunca</span>
+                                <span class="stat-label">Último backup</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="config-section">
+                        <h3>⚠️ Zona de Perigo</h3>
+                        <p>Ações irreversíveis que afetam sua conta.</p>
+                        <div style="margin-top: 1rem;">
+                            <button class="btn btn-danger" onclick="excluirConta()" style="margin-bottom: 0.5rem;">
+                                🗑️ Excluir Conta
+                            </button>
+                            <br>
+                            <small style="color: #666;">Esta ação não pode ser desfeita!</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Aba Configurações -->
+        <div id="configuracoes" class="tab-content">
+            <h2 class="section-title">⚙️ Configurações do Sistema</h2>
+            
+            <div class="config-grid">
+                <div class="config-section">
+                    <h3>👤 Perfil do Usuário</h3>
+                    <div class="form-group">
+                        <label for="config-nome-usuario">Nome do Usuário</label>
+                        <input type="text" id="config-nome-usuario" value="Viviane">
+                    </div>
+                    <div class="form-group">
+                        <label for="config-empresa-principal">Empresa Principal</label>
+                        <select id="config-empresa-principal">
+                            <option value="">Selecione...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <h3>🎨 Aparência</h3>
+                    <div class="config-item">
+                        <label>
+                            <input type="checkbox" id="config-modo-escuro">
+                            Modo Escuro (em breve)
+                        </label>
+                    </div>
+                    <div class="config-item">
+                        <label>
+                            <input type="checkbox" id="config-animacoes" checked>
+                            Animações e Transições
+                        </label>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <h3>🔔 Notificações</h3>
+                    <div class="config-item">
+                        <label>
+                            <input type="checkbox" id="config-notif-lancamentos" checked>
+                            Lembrar de fazer lançamentos diários
+                        </label>
+                    </div>
+                    <div class="config-item">
+                        <label>
+                            <input type="checkbox" id="config-notif-avaliacoes" checked>
+                            Lembrar de avaliar funcionários
+                        </label>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <h3>💾 Dados e Backup</h3>
+                    <div class="config-item">
+                        <label>
+                            <input type="checkbox" id="config-backup-auto">
+                            Backup automático semanal
+                        </label>
+                    </div>
+                    <div class="config-item">
+                        <label>
+                            <input type="checkbox" id="config-salvar-auto" checked>
+                            Salvamento automático
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="config-actions">
+                <button class="btn btn-primary" onclick="salvarConfiguracoes()">💾 Salvar Configurações</button>
+                <button class="btn btn-danger" onclick="resetarConfiguracoes()">🔄 Restaurar Padrão</button>
+            </div>
+        </div>
+
+        <!-- Aba Backup & Dados -->
+        <div id="backup" class="tab-content">
+            <h2 class="section-title">💾 Backup & Gerenciamento de Dados</h2>
+            
+            <div class="backup-grid">
+                <div class="backup-card">
+                    <h3 class="backup-card-title">📤 Exportar Dados</h3>
+                    <p class="backup-card-description">Faça download de todos os seus dados em formato JSON</p>
+                    <div class="backup-info">
+                        <small>Último backup: <span id="ultimo-backup">Nunca</span></small>
+                    </div>
+                    <button class="btn btn-primary" onclick="exportarDados()">
+                        📥 Baixar Backup JSON
+                    </button>
+                </div>
+
+                <div class="backup-card">
+                    <h3 class="backup-card-title">📥 Importar Dados</h3>
+                    <p class="backup-card-description">Restaure seus dados de um arquivo JSON</p>
+                    <div class="file-input-container">
+                        <input type="file" id="arquivo-import" accept=".json" class="file-input">
+                        <label for="arquivo-import" class="file-input-label">
+                            📁 Escolher arquivo JSON
+                        </label>
+                    </div>
+                    <button class="btn btn-success" onclick="importarDados()">
+                        📤 Importar Dados
+                    </button>
+                </div>
+
+                <div class="backup-card">
+                    <h3 class="backup-card-title">🗑️ Limpar Dados</h3>
+                    <p class="backup-card-description">Reset completo do sistema (cuidado!)</p>
+                    <div class="backup-warning">
+                        ⚠️ Esta ação não pode ser desfeita
+                    </div>
+                    <button class="btn btn-danger" onclick="limparTodosDados()">
+                        🗑️ Limpar Tudo
+                    </button>
+                </div>
+
+                <div class="backup-card">
+                    <h3 class="backup-card-title">⚙️ Configurações</h3>
+                    <p class="backup-card-description">Configurações do sistema</p>
+                    <div class="config-item">
+                        <label>
+                            <input type="checkbox" id="backup-automatico" onchange="configurarBackupAutomatico()">
+                            Backup automático diário
+                        </label>
+                    </div>
+                    <button class="btn btn-primary" onclick="criarDadosExemplo()">
+                        🎯 Gerar Dados de Exemplo
+                    </button>
+                </div>
+            </div>
+
+            <div class="dados-preview">
+                <h3 class="section-title">📊 Preview dos Dados Atuais</h3>
+                
+                <div class="stats-resumo">
+                    <div class="stat-resumo-item">
+                        <span class="stat-resumo-numero" id="preview-empresas">0</span>
+                        <span class="stat-resumo-label">Empresas</span>
+                    </div>
+                    <div class="stat-resumo-item">
+                        <span class="stat-resumo-numero" id="preview-funcionarios">0</span>
+                        <span class="stat-resumo-label">Funcionários</span>
+                    </div>
+                    <div class="stat-resumo-item">
+                        <span class="stat-resumo-numero" id="preview-obras">0</span>
+                        <span class="stat-resumo-label">Obras</span>
+                    </div>
+                    <div class="stat-resumo-item">
+                        <span class="stat-resumo-numero" id="preview-lancamentos">0</span>
+                        <span class="stat-resumo-label">Lançamentos</span>
+                    </div>
+                    <div class="stat-resumo-item">
+                        <span class="stat-resumo-numero" id="preview-espelho">0</span>
+                        <span class="stat-resumo-label">Registros Espelho</span>
+                    </div>
+                </div>
+
+                <div class="dados-json-container">
+                    <button class="btn btn-primary" onclick="mostrarPreviewJSON()" id="btn-preview">
+                        👁️ Ver Estrutura JSON
+                    </button>
+                    <div id="json-preview" class="json-preview" style="display: none;">
+                        <pre id="json-content"></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </main>
+
+    <!-- Toast de Notificações -->
+    <div id="toast" class="toast">
+        <span id="toast-message"></span>
+        <button onclick="fecharToast()" class="toast-close">×</button>
+    </div>
+
+    <!-- Modal de Confirmação -->
+    <div id="modal-overlay" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-titulo">Confirmação</h2>
+                <button class="modal-close" onclick="fecharModal()">&times;</button>
+            </div>
+            <div id="modal-conteudo" style="padding: 20px; font-size: 1rem;"></div>
+            <div class="modal-actions">
+                <button id="modal-confirmar" class="btn btn-primary">✅ Confirmar</button>
+                <button type="button" class="btn btn-danger" onclick="fecharModal()">❌ Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Global -->
+    <div id="loading-global" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <p>Carregando...</p>
+    </div>
+
+    <!-- SheetJS para exportação Excel -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <script src="script.js?v=4.4"></script>
+</body>
+</html>
