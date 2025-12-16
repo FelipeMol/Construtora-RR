@@ -4,9 +4,15 @@
 -- Purpose: Replace funcionario_id with usuario_responsavel_id
 -- ========================================
 
+-- Selecionar o banco de dados
+USE hg253b74_controleobras;
+
 -- Add new column for user assignment
 ALTER TABLE tarefas
-ADD COLUMN usuario_responsavel_id BIGINT AFTER funcionario_id,
+ADD COLUMN usuario_responsavel_id BIGINT AFTER funcionario_id;
+
+-- Add foreign key constraint
+ALTER TABLE tarefas
 ADD CONSTRAINT fk_tarefas_usuario_responsavel
     FOREIGN KEY (usuario_responsavel_id)
     REFERENCES usuarios(id)
