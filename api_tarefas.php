@@ -104,28 +104,38 @@ function listarTarefas($pdo, $usuario, $ehAdmin) {
             o.nome as obra_nome,
             e.nome as empresa_nome,
             uc.nome as criado_por_nome,
+            ur.nome as usuario_responsavel_nome,
+            ur.email as usuario_responsavel_email,
+            ur.tipo as usuario_responsavel_tipo,
             (SELECT COUNT(*) FROM tarefas_comentarios tc WHERE tc.tarefa_id = t.id) as comentarios_count
         FROM tarefas t
         LEFT JOIN funcionarios f ON t.funcionario_id = f.id
         LEFT JOIN obras o ON t.obra_id = o.id
         LEFT JOIN empresas e ON t.empresa_id = e.id
         LEFT JOIN usuarios uc ON t.criado_por = uc.id
+        LEFT JOIN usuarios ur ON t.usuario_responsavel_id = ur.id
     ";
 
     $where = [];
     $params = [];
 
-    // Non-admin: filtrar por funcionário
+    // Non-admin: filtrar por usuário responsável
     if (!$ehAdmin) {
         // Usuário comum só vê tarefas atribuídas a ele
-        $where[] = "t.funcionario_id = :usuario_funcionario_id";
-        $params[':usuario_funcionario_id'] = $usuario['id'];
+        $where[] = "t.usuario_responsavel_id = :usuario_responsavel_id";
+        $params[':usuario_responsavel_id'] = $usuario['id'];
     }
 
-    // Filtro por funcionário (query param)
+    // Filtro por funcionário (query param) - mantido para compatibilidade
     if (isset($_GET['funcionario_id']) && $_GET['funcionario_id'] !== '') {
         $where[] = "t.funcionario_id = :funcionario_id";
         $params[':funcionario_id'] = $_GET['funcionario_id'];
+    }
+
+    // Filtro por usuário responsável
+    if (isset($_GET['usuario_responsavel_id']) && $_GET['usuario_responsavel_id'] !== '') {
+        $where[] = "t.usuario_responsavel_id = :usuario_responsavel_id_filter";
+        $params[':usuario_responsavel_id_filter'] = $_GET['usuario_responsavel_id'];
     }
 
     // Filtro por status
@@ -202,6 +212,7 @@ function criarTarefa($pdo, $usuario) {
         status,
         prioridade,
         funcionario_id,
+        usuario_responsavel_id,
         obra_id,
         empresa_id,
         data_prazo,
@@ -212,6 +223,7 @@ function criarTarefa($pdo, $usuario) {
         :status,
         :prioridade,
         :funcionario_id,
+        :usuario_responsavel_id,
         :obra_id,
         :empresa_id,
         :data_prazo,
@@ -225,6 +237,7 @@ function criarTarefa($pdo, $usuario) {
         ':status' => $dados['status'] ?? 'novo',
         ':prioridade' => $dados['prioridade'] ?? 'media',
         ':funcionario_id' => !empty($dados['funcionario_id']) ? $dados['funcionario_id'] : null,
+        ':usuario_responsavel_id' => !empty($dados['usuario_responsavel_id']) ? $dados['usuario_responsavel_id'] : null,
         ':obra_id' => !empty($dados['obra_id']) ? $dados['obra_id'] : null,
         ':empresa_id' => !empty($dados['empresa_id']) ? $dados['empresa_id'] : null,
         ':data_prazo' => !empty($dados['data_prazo']) ? $dados['data_prazo'] : null,
@@ -254,7 +267,7 @@ function atualizarTarefa($pdo, $usuario, $ehAdmin) {
 
     // Verificar se tarefa existe e se usuário tem permissão
     if (!$ehAdmin) {
-        $stmt = $pdo->prepare("SELECT funcionario_id FROM tarefas WHERE id = :id");
+        $stmt = $pdo->prepare("SELECT usuario_responsavel_id, funcionario_id FROM tarefas WHERE id = :id");
         $stmt->execute([':id' => $id]);
         $tarefa = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -264,8 +277,8 @@ function atualizarTarefa($pdo, $usuario, $ehAdmin) {
             return;
         }
 
-        // Usuário comum só pode editar próprias tarefas
-        if ($tarefa['funcionario_id'] != $usuario['id']) {
+        // Usuário comum só pode editar próprias tarefas (check both fields for compatibility)
+        if ($tarefa['usuario_responsavel_id'] != $usuario['id'] && $tarefa['funcionario_id'] != $usuario['id']) {
             http_response_code(403);
             resposta_json(false, null, 'Você só pode editar suas próprias tarefas');
             return;
@@ -316,6 +329,14 @@ function atualizarTarefa($pdo, $usuario, $ehAdmin) {
         if ($ehAdmin) {
             $campos[] = "funcionario_id = :funcionario_id";
             $params[':funcionario_id'] = !empty($dados['funcionario_id']) ? $dados['funcionario_id'] : null;
+        }
+    }
+
+    if (isset($dados['usuario_responsavel_id'])) {
+        // Apenas admin pode reatribuir tarefas
+        if ($ehAdmin) {
+            $campos[] = "usuario_responsavel_id = :usuario_responsavel_id";
+            $params[':usuario_responsavel_id'] = !empty($dados['usuario_responsavel_id']) ? $dados['usuario_responsavel_id'] : null;
         }
     }
 
@@ -371,7 +392,7 @@ function excluirTarefa($pdo, $usuario, $ehAdmin) {
 
     // Verificar se tarefa existe e se usuário tem permissão
     if (!$ehAdmin) {
-        $stmt = $pdo->prepare("SELECT funcionario_id FROM tarefas WHERE id = :id");
+        $stmt = $pdo->prepare("SELECT usuario_responsavel_id, funcionario_id FROM tarefas WHERE id = :id");
         $stmt->execute([':id' => $id]);
         $tarefa = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -381,8 +402,8 @@ function excluirTarefa($pdo, $usuario, $ehAdmin) {
             return;
         }
 
-        // Usuário comum só pode excluir próprias tarefas
-        if ($tarefa['funcionario_id'] != $usuario['id']) {
+        // Usuário comum só pode excluir próprias tarefas (check both fields for compatibility)
+        if ($tarefa['usuario_responsavel_id'] != $usuario['id'] && $tarefa['funcionario_id'] != $usuario['id']) {
             http_response_code(403);
             resposta_json(false, null, 'Você só pode excluir suas próprias tarefas');
             return;

@@ -1679,114 +1679,128 @@
     <!-- ===================================== -->
 
     <!-- Modal Nova/Editar Tarefa -->
-    <div id="modal-tarefa" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="modal-tarefa-titulo">📋 Nova Tarefa</h2>
-                <button class="close-modal" onclick="fecharModal('modal-tarefa')">&times;</button>
+    <div id="modal-tarefa" class="modal-backdrop">
+        <div class="modal-container modal-tarefa-new">
+            <button class="modal-close-backdrop" onclick="fecharModal('modal-tarefa')" aria-label="Fechar">
+                <span>&times;</span>
+            </button>
+
+            <div class="modal-content-new">
+                <div class="modal-header-new">
+                    <div class="modal-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 11l3 3L22 4"></path>
+                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                        </svg>
+                    </div>
+                    <h2 id="modal-tarefa-titulo" class="modal-title">Nova Tarefa</h2>
+                </div>
+
+                <form id="form-tarefa" onsubmit="event.preventDefault(); salvarTarefa();">
+                    <div class="modal-body-new">
+                        <div class="form-field-new">
+                            <label for="tarefa-titulo" class="form-label-new">
+                                <span class="label-text">Título</span>
+                                <span class="label-required">*</span>
+                            </label>
+                            <input type="text" id="tarefa-titulo" class="form-input-new" placeholder="Digite o título da tarefa..." required minlength="3">
+                        </div>
+
+                        <div class="form-field-new">
+                            <label for="tarefa-descricao" class="form-label-new">
+                                <span class="label-text">Descrição</span>
+                            </label>
+                            <textarea id="tarefa-descricao" class="form-textarea-new" rows="3" placeholder="Descreva os detalhes da tarefa..."></textarea>
+                        </div>
+
+                        <div class="form-field-new">
+                            <label for="tarefa-usuario-responsavel" class="form-label-new">
+                                <span class="label-text">Usuário Responsável</span>
+                                <span class="label-required">*</span>
+                            </label>
+                            <div class="custom-select-wrapper">
+                                <select id="tarefa-usuario-responsavel" class="form-select-new form-select-with-avatar" required>
+                                    <option value="">Selecione um usuário...</option>
+                                </select>
+                                <div class="select-icon">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-row-new">
+                            <div class="form-field-new">
+                                <label for="tarefa-obra" class="form-label-new">
+                                    <span class="label-text">Obra</span>
+                                </label>
+                                <select id="tarefa-obra" class="form-select-new">
+                                    <option value="">Nenhuma obra</option>
+                                </select>
+                            </div>
+
+                            <div class="form-field-new">
+                                <label for="tarefa-empresa" class="form-label-new">
+                                    <span class="label-text">Empresa</span>
+                                </label>
+                                <select id="tarefa-empresa" class="form-select-new">
+                                    <option value="">Nenhuma empresa</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row-new">
+                            <div class="form-field-new">
+                                <label for="tarefa-status" class="form-label-new">
+                                    <span class="label-text">Status</span>
+                                    <span class="label-required">*</span>
+                                </label>
+                                <select id="tarefa-status" class="form-select-new" required>
+                                    <option value="novo">🆕 Novo</option>
+                                    <option value="em_andamento">⚙️ Em Andamento</option>
+                                    <option value="concluido">✅ Concluído</option>
+                                    <option value="cancelado">❌ Cancelado</option>
+                                </select>
+                            </div>
+
+                            <div class="form-field-new">
+                                <label for="tarefa-prioridade" class="form-label-new">
+                                    <span class="label-text">Prioridade</span>
+                                    <span class="label-required">*</span>
+                                </label>
+                                <select id="tarefa-prioridade" class="form-select-new" required>
+                                    <option value="baixa">🟢 Baixa</option>
+                                    <option value="media" selected>🟡 Média</option>
+                                    <option value="alta">🟠 Alta</option>
+                                    <option value="urgente">🔴 Urgente</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-field-new">
+                            <label for="tarefa-prazo" class="form-label-new">
+                                <span class="label-text">Data Prazo</span>
+                            </label>
+                            <input type="date" id="tarefa-prazo" class="form-input-new">
+                        </div>
+                    </div>
+
+                    <div class="modal-footer-new">
+                        <button type="button" class="btn-new btn-secondary-new" onclick="fecharModal('modal-tarefa')">
+                            <span>Cancelar</span>
+                        </button>
+                        <button type="submit" class="btn-new btn-primary-new">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                                <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                                <polyline points="7 3 7 8 15 8"></polyline>
+                            </svg>
+                            <span>Salvar Tarefa</span>
+                        </button>
+                    </div>
+                </form>
             </div>
-
-            <form id="form-tarefa" onsubmit="event.preventDefault(); salvarTarefa();">
-                <div class="form-grid">
-                    <div class="form-group col-span-2">
-                        <label for="tarefa-titulo">Título *</label>
-                        <input
-                            type="text"
-                            id="tarefa-titulo"
-                            class="form-control"
-                            placeholder="Digite o título da tarefa"
-                            required
-                            minlength="3"
-                        >
-                    </div>
-
-                    <div class="form-group col-span-2">
-                        <label for="tarefa-descricao">Descrição</label>
-                        <textarea
-                            id="tarefa-descricao"
-                            class="form-control"
-                            rows="3"
-                            placeholder="Descreva os detalhes da tarefa..."
-                        ></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="tarefa-funcionario">Funcionário Responsável *</label>
-                        <select
-                            id="tarefa-funcionario"
-                            class="form-control"
-                            required
-                        >
-                            <option value="">Selecione...</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="tarefa-obra">Obra</label>
-                        <select
-                            id="tarefa-obra"
-                            class="form-control"
-                        >
-                            <option value="">Selecione...</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="tarefa-empresa">Empresa</label>
-                        <select
-                            id="tarefa-empresa"
-                            class="form-control"
-                        >
-                            <option value="">Selecione...</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="tarefa-status">Status *</label>
-                        <select
-                            id="tarefa-status"
-                            class="form-control"
-                            required
-                        >
-                            <option value="pendente">📋 Pendente</option>
-                            <option value="em_andamento">⚙️ Em Andamento</option>
-                            <option value="concluida">✅ Concluída</option>
-                            <option value="cancelada">❌ Cancelada</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="tarefa-prioridade">Prioridade *</label>
-                        <select
-                            id="tarefa-prioridade"
-                            class="form-control"
-                            required
-                        >
-                            <option value="baixa">🟢 Baixa</option>
-                            <option value="media" selected>🟡 Média</option>
-                            <option value="alta">🔴 Alta</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="tarefa-prazo">Data Prazo</label>
-                        <input
-                            type="date"
-                            id="tarefa-prazo"
-                            class="form-control"
-                        >
-                    </div>
-                </div>
-
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="fecharModal('modal-tarefa')">
-                        ❌ Cancelar
-                    </button>
-                    <button type="submit" class="btn btn-primary">
-                        💾 Salvar Tarefa
-                    </button>
-                </div>
-            </form>
         </div>
     </div>
 

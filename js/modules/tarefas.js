@@ -2,12 +2,12 @@
 // MÓDULO: TAREFAS (Kanban Board)
 // ========================================
 
-import { TarefasAPI, ComentariosAPI } from './api.js';
-import { tarefasActions, comentariosActions, tarefasFiltersActions, funcionariosActions, obrasActions, empresasActions } from './store.js';
+import { TarefasAPI, ComentariosAPI, UsuariosAPI } from './api.js';
+import { tarefasActions, comentariosActions, tarefasFiltersActions, funcionariosActions, obrasActions, empresasActions, usuariosActions } from './store.js';
 import { showNotification, showLoading, hideLoading, abrirModal, fecharModal } from './ui.js';
 import { KanbanColumn, TaskCard, CommentThread, TaskFilterPanel } from './components.js';
 import { MESSAGES, TAREFAS_CONFIG } from './config.js';
-import { formatDate } from './utils.js';
+import { formatDate, gerarAvatar } from './utils.js';
 import { ehAdmin as verificarEhAdmin, temPermissao, obterUsuario } from './auth.js';
 
 // Estado local do módulo
@@ -21,6 +21,16 @@ export async function initTarefas() {
 
     // Obter usuário atual
     currentUsuario = obterUsuario();
+
+    // Carregar usuários para dropdown
+    try {
+        const usuariosResponse = await UsuariosAPI.listar();
+        if (usuariosResponse.sucesso) {
+            usuariosActions.set(usuariosResponse.dados || []);
+        }
+    } catch (error) {
+        console.error('Erro ao carregar usuários:', error);
+    }
 
     // Carregar tarefas
     await carregarTarefas();
@@ -153,7 +163,7 @@ export function abrirFormularioNovaTarefa() {
     }
 
     // Preencher dropdowns
-    preencherDropdownFuncionarios();
+    preencherDropdownUsuarios();
     preencherDropdownObras();
     preencherDropdownEmpresas();
 
@@ -190,7 +200,7 @@ export async function salvarTarefa(event) {
         descricao: document.getElementById('tarefa-descricao')?.value?.trim(),
         status: document.getElementById('tarefa-status')?.value,
         prioridade: document.getElementById('tarefa-prioridade')?.value,
-        funcionario_id: document.getElementById('tarefa-funcionario')?.value || null,
+        usuario_responsavel_id: document.getElementById('tarefa-usuario-responsavel')?.value || null,
         obra_id: document.getElementById('tarefa-obra')?.value || null,
         empresa_id: document.getElementById('tarefa-empresa')?.value || null,
         data_prazo: document.getElementById('tarefa-prazo')?.value || null
@@ -207,8 +217,8 @@ export async function salvarTarefa(event) {
         return;
     }
 
-    if (!dados.funcionario_id) {
-        showNotification('Selecione um funcionário', 'erro');
+    if (!dados.usuario_responsavel_id) {
+        showNotification('Selecione um usuário responsável', 'erro');
         return;
     }
 
@@ -663,6 +673,37 @@ function preencherDropdownFuncionarios() {
         option.textContent = `${func.nome} - ${func.funcao || 'Sem função'}`;
         select.appendChild(option);
     });
+}
+
+/**
+ * Preencher dropdown de usuários responsáveis
+ */
+function preencherDropdownUsuarios() {
+    const select = document.getElementById('tarefa-usuario-responsavel');
+    if (!select) return;
+
+    const usuarios = usuariosActions.getAll();
+
+    select.innerHTML = '<option value="">Selecione um usuário...</option>';
+
+    usuarios
+        .filter(usuario => usuario.ativo === 'Sim')
+        .forEach(usuario => {
+            const option = document.createElement('option');
+            option.value = usuario.id;
+
+            // Generate initials for avatar display
+            const initials = gerarAvatar(usuario.nome);
+            const tipoLabel = usuario.tipo === 'admin' ? '👑 Admin' : '👤 Usuário';
+
+            // Format: [XX] Nome (Tipo)
+            option.textContent = `[${initials}] ${usuario.nome} (${tipoLabel})`;
+            option.dataset.nome = usuario.nome;
+            option.dataset.tipo = usuario.tipo;
+            option.dataset.initials = initials;
+
+            select.appendChild(option);
+        });
 }
 
 /**

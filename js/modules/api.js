@@ -136,6 +136,14 @@ export const FuncionariosAPI = {
     excluir: (id) => fetchAPI('funcionarios', { method: 'DELETE', id })
 };
 
+// Usuários
+export const UsuariosAPI = {
+    listar: () => fetchAPI('usuarios'),
+    criar: (data) => fetchAPI('usuarios', { method: 'POST', data }),
+    atualizar: (id, data) => fetchAPI('usuarios', { method: 'PUT', id, data }),
+    excluir: (id) => fetchAPI('usuarios', { method: 'DELETE', id })
+};
+
 // Obras
 export const ObrasAPI = {
     listar: () => fetchAPI('obras'),

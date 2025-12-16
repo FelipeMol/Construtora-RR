@@ -16,6 +16,7 @@ class AppStore {
             funcoes: [],
             responsaveis: [],
             avaliacoes: [],
+            usuarios: [],
 
             // Tarefas
             tarefas: [],
@@ -366,6 +367,17 @@ export const uiActions = {
     setCurrentTab: (tab) => store.setState('currentTab', tab),
     setFilters: (filters) => store.setState('filters', filters),
     setUsuario: (usuario) => store.setState('usuario', usuario)
+};
+
+// Usuarios Actions
+export const usuariosActions = {
+    set: (data) => store.setState('usuarios', data),
+    add: (item) => store.push('usuarios', item),
+    update: (id, updates) => store.update('usuarios', id, updates),
+    remove: (id) => store.remove('usuarios', id),
+    findById: (id) => store.findById('usuarios', id),
+    getAll: () => store.getState('usuarios'),
+    getAtivos: () => store.filter('usuarios', u => u.ativo === 'Sim')
 };
 
 // Tarefas Actions
