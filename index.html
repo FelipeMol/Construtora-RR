@@ -698,147 +698,6 @@
                     </form>
                 </div>
             </div>
-
-            <!-- Modal: Nova/Editar Tarefa -->
-            <div id="modal-tarefa" class="modal">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h2 class="modal-title">Nova Tarefa</h2>
-                        <button class="modal-close" onclick="fecharModal('modal-tarefa')">&times;</button>
-                    </div>
-                    <form id="form-tarefa">
-                        <div class="form-group">
-                            <label for="tarefa-titulo">Título *</label>
-                            <input type="text" id="tarefa-titulo" placeholder="Ex: Revisar projeto elétrico" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="tarefa-descricao">Descrição</label>
-                            <textarea id="tarefa-descricao" rows="3" placeholder="Descreva a tarefa..."></textarea>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="tarefa-status">Status *</label>
-                                <select id="tarefa-status" required>
-                                    <option value="novo">🆕 Novo</option>
-                                    <option value="em_andamento">⚙️ Em Andamento</option>
-                                    <option value="concluido">✅ Concluído</option>
-                                    <option value="cancelado">❌ Cancelado</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="tarefa-prioridade">Prioridade *</label>
-                                <select id="tarefa-prioridade" required>
-                                    <option value="baixa">🟢 Baixa</option>
-                                    <option value="media" selected>🟡 Média</option>
-                                    <option value="alta">🟠 Alta</option>
-                                    <option value="urgente">🔴 Urgente</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="tarefa-funcionario">Atribuir para (Funcionário) *</label>
-                            <select id="tarefa-funcionario" required>
-                                <option value="">Selecione um funcionário...</option>
-                            </select>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="tarefa-obra">Vincular à Obra (Opcional)</label>
-                                <select id="tarefa-obra">
-                                    <option value="">Nenhuma obra</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="tarefa-empresa">Vincular à Empresa (Opcional)</label>
-                                <select id="tarefa-empresa">
-                                    <option value="">Nenhuma empresa</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="tarefa-prazo">Data de Vencimento</label>
-                            <input type="date" id="tarefa-prazo">
-                        </div>
-
-                        <div class="modal-actions">
-                            <button type="submit" class="btn btn-primary">💾 Salvar Tarefa</button>
-                            <button type="button" class="btn btn-secondary" onclick="fecharModal('modal-tarefa')">❌ Cancelar</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Modal: Detalhes da Tarefa -->
-            <div id="modal-detalhe-tarefa" class="modal">
-                <div class="modal-content modal-large">
-                    <div class="modal-header">
-                        <h2 id="detalhe-tarefa-titulo" class="modal-title"></h2>
-                        <button class="modal-close" onclick="fecharModal('modal-detalhe-tarefa')">&times;</button>
-                    </div>
-
-                    <div class="modal-body">
-                        <div class="tarefa-detalhes">
-                            <div class="tarefa-meta-group">
-                                <div class="tarefa-meta-item">
-                                    <strong>Status:</strong>
-                                    <span id="detalhe-tarefa-status"></span>
-                                </div>
-                                <div class="tarefa-meta-item">
-                                    <strong>Prioridade:</strong>
-                                    <span id="detalhe-tarefa-prioridade"></span>
-                                </div>
-                            </div>
-
-                            <div class="tarefa-descricao-box">
-                                <strong>Descrição:</strong>
-                                <p id="detalhe-tarefa-descricao"></p>
-                            </div>
-
-                            <div class="tarefa-info-grid">
-                                <div class="info-item">
-                                    <strong>👤 Responsável:</strong>
-                                    <span id="detalhe-tarefa-funcionario"></span>
-                                </div>
-                                <div class="info-item">
-                                    <strong>🏗️ Obra:</strong>
-                                    <span id="detalhe-tarefa-obra"></span>
-                                </div>
-                                <div class="info-item">
-                                    <strong>🏛️ Empresa:</strong>
-                                    <span id="detalhe-tarefa-empresa"></span>
-                                </div>
-                                <div class="info-item">
-                                    <strong>⏰ Prazo:</strong>
-                                    <span id="detalhe-tarefa-prazo"></span>
-                                </div>
-                                <div class="info-item">
-                                    <strong>📅 Criada em:</strong>
-                                    <span id="detalhe-tarefa-criado-em"></span>
-                                </div>
-                            </div>
-
-                            <!-- Comentários -->
-                            <div class="tarefa-comentarios-section">
-                                <h3 style="margin: 20px 0 10px 0; font-size: 18px;">💬 Comentários</h3>
-                                <div id="tarefa-comentarios"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="modal-actions">
-                        <button id="btn-editar-tarefa" class="btn btn-primary">✏️ Editar</button>
-                        <button id="btn-excluir-tarefa" class="btn btn-danger">🗑️ Excluir</button>
-                        <button type="button" class="btn btn-secondary" onclick="fecharModal('modal-detalhe-tarefa')">Fechar</button>
-                    </div>
-                </div>
-            </div>
         </div>
 
 
@@ -1812,6 +1671,219 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- ===================================== -->
+    <!-- MODAIS GLOBAIS (Fora da estrutura de tabs) -->
+    <!-- ===================================== -->
+
+    <!-- Modal Nova/Editar Tarefa -->
+    <div id="modal-tarefa" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-tarefa-titulo">📋 Nova Tarefa</h2>
+                <button class="close-modal" onclick="fecharModal('modal-tarefa')">&times;</button>
+            </div>
+
+            <form id="form-tarefa" onsubmit="event.preventDefault(); salvarTarefa();">
+                <div class="form-grid">
+                    <div class="form-group col-span-2">
+                        <label for="tarefa-titulo">Título *</label>
+                        <input
+                            type="text"
+                            id="tarefa-titulo"
+                            class="form-control"
+                            placeholder="Digite o título da tarefa"
+                            required
+                            minlength="3"
+                        >
+                    </div>
+
+                    <div class="form-group col-span-2">
+                        <label for="tarefa-descricao">Descrição</label>
+                        <textarea
+                            id="tarefa-descricao"
+                            class="form-control"
+                            rows="3"
+                            placeholder="Descreva os detalhes da tarefa..."
+                        ></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="tarefa-funcionario">Funcionário Responsável *</label>
+                        <select
+                            id="tarefa-funcionario"
+                            class="form-control"
+                            required
+                        >
+                            <option value="">Selecione...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="tarefa-obra">Obra</label>
+                        <select
+                            id="tarefa-obra"
+                            class="form-control"
+                        >
+                            <option value="">Selecione...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="tarefa-empresa">Empresa</label>
+                        <select
+                            id="tarefa-empresa"
+                            class="form-control"
+                        >
+                            <option value="">Selecione...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="tarefa-status">Status *</label>
+                        <select
+                            id="tarefa-status"
+                            class="form-control"
+                            required
+                        >
+                            <option value="pendente">📋 Pendente</option>
+                            <option value="em_andamento">⚙️ Em Andamento</option>
+                            <option value="concluida">✅ Concluída</option>
+                            <option value="cancelada">❌ Cancelada</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="tarefa-prioridade">Prioridade *</label>
+                        <select
+                            id="tarefa-prioridade"
+                            class="form-control"
+                            required
+                        >
+                            <option value="baixa">🟢 Baixa</option>
+                            <option value="media" selected>🟡 Média</option>
+                            <option value="alta">🔴 Alta</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="tarefa-prazo">Data Prazo</label>
+                        <input
+                            type="date"
+                            id="tarefa-prazo"
+                            class="form-control"
+                        >
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="fecharModal('modal-tarefa')">
+                        ❌ Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        💾 Salvar Tarefa
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Detalhes da Tarefa -->
+    <div id="modal-detalhe-tarefa" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>📋 Detalhes da Tarefa</h2>
+                <button class="close-modal" onclick="fecharModal('modal-detalhe-tarefa')">&times;</button>
+            </div>
+
+            <div class="tarefa-detalhes-container">
+                <!-- Informações principais -->
+                <div class="tarefa-info-section">
+                    <h3 id="detalhe-tarefa-titulo" class="tarefa-titulo-principal">Título da Tarefa</h3>
+
+                    <div class="tarefa-meta-info">
+                        <div class="meta-item">
+                            <span class="meta-label">Status:</span>
+                            <span id="detalhe-tarefa-status"></span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Prioridade:</span>
+                            <span id="detalhe-tarefa-prioridade"></span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Responsável:</span>
+                            <span id="detalhe-tarefa-funcionario">-</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Obra:</span>
+                            <span id="detalhe-tarefa-obra">-</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Empresa:</span>
+                            <span id="detalhe-tarefa-empresa">-</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Prazo:</span>
+                            <span id="detalhe-tarefa-prazo">-</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Criado em:</span>
+                            <span id="detalhe-tarefa-criado-em">-</span>
+                        </div>
+                    </div>
+
+                    <div class="tarefa-descricao-section">
+                        <h4>Descrição</h4>
+                        <p id="detalhe-tarefa-descricao">Sem descrição</p>
+                    </div>
+                </div>
+
+                <!-- Comentários -->
+                <div class="tarefa-comentarios-section">
+                    <h4>💬 Comentários</h4>
+
+                    <div id="lista-comentarios" class="comentarios-lista">
+                        <!-- Comentários carregados dinamicamente -->
+                    </div>
+
+                    <form id="form-comentario" class="form-comentario" onsubmit="event.preventDefault(); adicionarComentario();">
+                        <textarea
+                            id="comentario-texto"
+                            class="form-control"
+                            placeholder="Adicione um comentário..."
+                            rows="2"
+                            required
+                        ></textarea>
+                        <button type="submit" class="btn btn-primary btn-sm">
+                            💬 Adicionar Comentário
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button
+                    id="btn-excluir-tarefa"
+                    type="button"
+                    class="btn btn-danger"
+                    onclick="excluirTarefa(this.dataset.tarefaId)"
+                >
+                    🗑️ Excluir
+                </button>
+                <button
+                    id="btn-editar-tarefa"
+                    type="button"
+                    class="btn btn-primary"
+                    onclick="editarTarefa(this.dataset.tarefaId)"
+                >
+                    ✏️ Editar
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="fecharModal('modal-detalhe-tarefa')">
+                    Fechar
+                </button>
+            </div>
         </div>
     </div>
 
