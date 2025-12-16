@@ -1,10 +1,15 @@
 <?php
 require_once __DIR__ . '/config.php';
 
+// Middleware de autenticação
+requer_autenticacao();
+
 $metodo = $_SERVER['REQUEST_METHOD'];
 
 switch ($metodo) {
     case 'GET':
+        requer_permissao('empresas', 'visualizar');
+
         try {
             $stmt = $pdo->query("SELECT * FROM empresas ORDER BY nome ASC");
             $empresas = $stmt->fetchAll();
@@ -15,6 +20,7 @@ switch ($metodo) {
         break;
 
     case 'POST':
+        requer_permissao('empresas', 'criar');
         $dados = obter_dados_post();
 
         if (empty($dados['nome'])) {
@@ -45,6 +51,8 @@ switch ($metodo) {
         break;
 
     case 'PUT':
+        requer_permissao('empresas', 'editar');
+
         $id = $_GET['id'] ?? null;
 
         if (!$id) {
@@ -102,6 +110,8 @@ switch ($metodo) {
         break;
 
     case 'DELETE':
+        requer_permissao('empresas', 'excluir');
+
         $id = $_GET['id'] ?? null;
 
         if (!$id) {

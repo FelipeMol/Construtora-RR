@@ -1,11 +1,16 @@
 <?php
 require_once 'config.php';
 
+// Middleware de autenticação
+requer_autenticacao();
+
 // Determinar ação baseada no método HTTP
 $metodo = $_SERVER['REQUEST_METHOD'];
 
 switch ($metodo) {
     case 'GET':
+        requer_permissao('lancamentos', 'visualizar');
+
         // Listar lançamentos com filtros opcionais (data inicial/final)
         try {
             $sql = "SELECT * FROM lancamentos";
@@ -49,6 +54,7 @@ switch ($metodo) {
         break;
     
     case 'POST':
+        requer_permissao('lancamentos', 'criar');
         // Adicionar novo lançamento
         $dados = obter_dados_post();
         
@@ -89,6 +95,7 @@ switch ($metodo) {
         break;
     
     case 'PUT':
+        requer_permissao('lancamentos', 'editar');
         $id = $_GET['id'] ?? null;
         
         if (!$id) {
@@ -140,6 +147,7 @@ switch ($metodo) {
         break;
     
     case 'DELETE':
+        requer_permissao('lancamentos', 'excluir');
         // Excluir lançamento
         $id = $_GET['id'] ?? null;
         

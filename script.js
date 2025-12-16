@@ -436,6 +436,10 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Inject clean filters panel for Relatórios
     ensureRelatoriosControls();
+
+    // ===== CONFIGURAR MODAIS DE EDIÇÃO =====
+    // Fechar modal ao clicar no backdrop (fundo escuro)
+    configurarModaisEdicao();
 });
 
 // Função para configurar todos os formulários
@@ -1800,6 +1804,53 @@ function exportarCSV() {
 // FUNÇÕES DE EDIÇÃO (PLACEHOLDERS)
 // ========================================
 
+// ========================================
+// CONFIGURAÇÃO DOS MODAIS DE EDIÇÃO
+// ========================================
+
+function configurarModaisEdicao() {
+    console.log('⚙️ Configurando modais de edição...');
+
+    // Lista de modais de edição
+    const modais = [
+        { id: 'modal-editar-empresa', fechar: fecharModalEmpresa },
+        { id: 'modal-editar-funcionario', fechar: fecharModalFuncionario },
+        { id: 'modal-editar-obra', fechar: fecharModalObra }
+    ];
+
+    // Adicionar event listener para fechar ao clicar no backdrop
+    modais.forEach(({ id, fechar }) => {
+        const modal = document.getElementById(id);
+        if (modal) {
+            modal.addEventListener('click', function(event) {
+                // Fechar apenas se clicou no backdrop (fundo), não no conteúdo
+                if (event.target === modal) {
+                    fechar();
+                }
+            });
+            console.log(`✅ Modal ${id} configurado`);
+        }
+    });
+
+    // Adicionar event listener global para tecla ESC
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            // Verificar qual modal está aberto e fechar
+            modais.forEach(({ id, fechar }) => {
+                const modal = document.getElementById(id);
+                if (modal && modal.classList.contains('show')) {
+                    fechar();
+                    console.log(`🚪 Modal ${id} fechado com ESC`);
+                }
+            });
+        }
+    });
+}
+
+// ========================================
+// EMPRESAS - EDIÇÃO
+// ========================================
+
 function editarEmpresa(id) {
     console.log('✏️ Abrindo modal para editar empresa:', id);
     
@@ -2313,12 +2364,17 @@ function setupRelatoriosEventListeners() {
     console.log('btnAddFilter:', btnAddFilter);
     if (btnAddFilter) {
         console.log('✅ Botão adicionar filtro encontrado');
-        btnAddFilter.addEventListener('click', (e) => {
+        // Remover listener anterior se existir (evitar duplicação)
+        const newBtn = btnAddFilter.cloneNode(true);
+        btnAddFilter.parentNode.replaceChild(newBtn, btnAddFilter);
+
+        newBtn.addEventListener('click', (e) => {
             console.log('🔘 Botão adicionar filtro clicado!');
             e.preventDefault();
             e.stopPropagation();
             mostrarMenuFiltros();
         });
+        console.log('✅ Event listener adicionado ao botão de filtro');
     } else {
         console.warn('⚠️ Botão adicionar filtro não encontrado!');
     }
@@ -2942,18 +2998,26 @@ function mostrarMenuFiltros() {
 // Abrir seletor de filtro
 function abrirSeletorFiltro(tipo) {
     console.log(`🔍 Abrindo seletor para: ${tipo}`);
-    
+
     let opcoes = [];
     let titulo = '';
     let icone = '';
-    
+
     if (tipo === 'funcionario') {
         titulo = 'Selecione um Funcionário';
         icone = '👤';
+        if (!funcionarios || funcionarios.length === 0) {
+            alert('Não há funcionários cadastrados.');
+            return;
+        }
         opcoes = funcionarios.map(f => ({ id: String(f.id), nome: f.nome }));
     } else if (tipo === 'funcao') {
         titulo = 'Selecione uma Função';
         icone = '💼';
+        if (!funcionarios || funcionarios.length === 0) {
+            alert('Não há funcionários com funções cadastradas.');
+            return;
+        }
         // Extrair funções únicas dos funcionários
         const funcoesSet = new Set();
         funcionarios.forEach(f => {
@@ -2962,13 +3026,25 @@ function abrirSeletorFiltro(tipo) {
             }
         });
         opcoes = Array.from(funcoesSet).map(j => JSON.parse(j));
+        if (opcoes.length === 0) {
+            alert('Não há funções cadastradas.');
+            return;
+        }
     } else if (tipo === 'obra') {
         titulo = 'Selecione uma Obra';
         icone = '🏢';
+        if (!obras || obras.length === 0) {
+            alert('Não há obras cadastradas.');
+            return;
+        }
         opcoes = obras.map(o => ({ id: String(o.id), nome: o.nome }));
     } else if (tipo === 'empresa') {
         titulo = 'Selecione uma Empresa';
         icone = '🏭';
+        if (!empresas || empresas.length === 0) {
+            alert('Não há empresas cadastradas.');
+            return;
+        }
         opcoes = empresas.map(e => ({ id: String(e.id), nome: e.nome }));
     }
     
@@ -3943,4 +4019,558 @@ window.mostrarAba = function(abaId) {
     }
 };
 
-console.log(' Sistema de Avalia��es carregado!');
+console.log('✅ Sistema de Avaliações carregado!');
+
+/* =========================================
+   DASHBOARD EXECUTIVO - Sistema Completo
+   ========================================= */
+
+// Estado global do dashboard
+const DashboardState = {
+    atividadesCarregadas: 10,
+    filtroAtivo: 'hoje',
+    ultimaAtualizacao: null
+};
+
+// Inicializar dashboard quando abrir a aba
+function initDashboard() {
+    console.log('📊 Inicializando Dashboard Executivo...');
+    
+    if (!lancamentos || !funcionarios || !obras) {
+        console.log('⏳ Aguardando dados...');
+        setTimeout(() => initDashboard(), 300);
+        return;
+    }
+    
+    atualizarRelogioHeader();
+    setInterval(atualizarRelogioHeader, 1000);
+    
+    atualizarCardsMetricas();
+    renderizarGraficoHorasPorObra();
+    renderizarTopFuncionarios();
+    renderizarCronogramaSemanal();
+    renderizarAlertas();
+    renderizarAtividadeRecente();
+    setupFiltrosAtividade();
+    
+    console.log('✅ Dashboard inicializado!');
+}
+
+// Atualizar relógio e data no header
+function atualizarRelogioHeader() {
+    const now = new Date();
+    const dias = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+    const meses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+    
+    const diaSemana = dias[now.getDay()];
+    const dia = now.getDate();
+    const mes = meses[now.getMonth()];
+    const ano = now.getFullYear();
+    const horas = String(now.getHours()).padStart(2, '0');
+    const minutos = String(now.getMinutes()).padStart(2, '0');
+    const segundos = String(now.getSeconds()).padStart(2, '0');
+    
+    const el = document.getElementById('dash-datetime');
+    if (el) {
+        el.textContent = `${diaSemana}, ${dia} de ${mes} de ${ano} • ${horas}:${minutos}:${segundos}`;
+    }
+}
+
+// Atualizar cards de métricas principais
+function atualizarCardsMetricas() {
+    const hoje = new Date().toISOString().split('T')[0];
+    const mesAtual = new Date().getMonth();
+    const anoAtual = new Date().getFullYear();
+    
+    // Card 1: Custo do Mês
+    const lancamentosMes = lancamentos.filter(l => {
+        const data = new Date(l.data);
+        return data.getMonth() === mesAtual && data.getFullYear() === anoAtual;
+    });
+    
+    let custoTotal = 0;
+    lancamentosMes.forEach(lanc => {
+        const func = funcionarios.find(f => f.nome === lanc.funcionario);
+        if (func && func.salario_dia) {
+            custoTotal += parseFloat(func.salario_dia) * parseFloat(lanc.horas || 0) / 8;
+        }
+    });
+    
+    document.getElementById('metric-custo').textContent = `R$ ${custoTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+    
+    // Simular variação (aqui você pode calcular comparando com mês anterior)
+    const variacao = Math.random() > 0.5 ? '+' : '-';
+    const percent = (Math.random() * 20).toFixed(0);
+    const badge = document.querySelector('#metric-custo-change .change-badge');
+    if (badge) {
+        badge.textContent = `${variacao}${percent}%`;
+        badge.className = `change-badge ${variacao === '+' ? 'negative' : 'positive'}`;
+    }
+    
+    // Card 2: Funcionários Ativos
+    const lancamentosHoje = lancamentos.filter(l => l.data === hoje);
+    const funcionariosAtivosHoje = new Set(lancamentosHoje.map(l => l.funcionario)).size;
+    const totalFuncionarios = funcionarios.length;
+    const ausentes = totalFuncionarios - funcionariosAtivosHoje;
+    
+    document.getElementById('metric-ativos').textContent = `${funcionariosAtivosHoje}/${totalFuncionarios}`;
+    
+    const ausentesEl = document.querySelector('.ausentes-count');
+    if (ausentesEl) {
+        ausentesEl.textContent = `${ausentes} ausentes`;
+        ausentesEl.style.color = ausentes > 0 ? '#ef4444' : '#10b981';
+    }
+    
+    // Card 3: Obras
+    const obrasAndamento = obras.filter(o => o.status === 'Em andamento' || o.status === 'em_andamento').length;
+    
+    // Simular obras atrasadas (aqui você pode comparar prazo_final com hoje)
+    const obrasAtrasadas = obras.filter(o => {
+        if (!o.prazo_final) return false;
+        const prazo = new Date(o.prazo_final);
+        return prazo < new Date() && (o.status === 'Em andamento' || o.status === 'em_andamento');
+    }).length;
+    
+    document.getElementById('metric-obras').textContent = `${obrasAndamento} em andamento`;
+    
+    const atrasadasEl = document.querySelector('.atrasadas-badge');
+    if (atrasadasEl) {
+        atrasadasEl.textContent = obrasAtrasadas > 0 ? `${obrasAtrasadas} atrasadas ⚠️` : '✓ no prazo';
+        atrasadasEl.style.color = obrasAtrasadas > 0 ? '#f59e0b' : '#10b981';
+    }
+    
+    // Card 4: Horas Hoje
+    let horasHoje = 0;
+    lancamentosHoje.forEach(l => {
+        horasHoje += parseFloat(l.horas || 0);
+    });
+    
+    document.getElementById('metric-horas').textContent = `${horasHoje.toFixed(1)}h`;
+    document.querySelector('.lancamentos-count').textContent = `${lancamentosHoje.length} lançamentos`;
+    
+    // Atualizar resumo do header
+    document.getElementById('dash-summary-obras').textContent = `${obrasAndamento} obras ativas`;
+    document.getElementById('dash-summary-func').textContent = `${funcionariosAtivosHoje} de ${totalFuncionarios} funcionários trabalhando`;
+    document.getElementById('dash-summary-ausentes').textContent = `${ausentes} ausentes hoje`;
+}
+
+// Renderizar gráfico de horas por obra (barras horizontais)
+function renderizarGraficoHorasPorObra() {
+    const container = document.getElementById('chart-horas-obra');
+    if (!container) return;
+    
+    // Calcular horas dos últimos 30 dias por obra
+    const data30DiasAtras = new Date();
+    data30DiasAtras.setDate(data30DiasAtras.getDate() - 30);
+    
+    const horasPorObra = {};
+    lancamentos.forEach(lanc => {
+        const dataLanc = new Date(lanc.data);
+        if (dataLanc >= data30DiasAtras) {
+            const obraNome = lanc.obra || 'Sem obra';
+            if (!horasPorObra[obraNome]) {
+                horasPorObra[obraNome] = 0;
+            }
+            horasPorObra[obraNome] += parseFloat(lanc.horas || 0);
+        }
+    });
+    
+    // Ordenar e pegar top 5
+    const obrasOrdenadas = Object.entries(horasPorObra)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5);
+    
+    if (obrasOrdenadas.length === 0) {
+        container.innerHTML = '<p style="text-align:center;color:#64748b;padding:2rem;">Nenhum lançamento nos últimos 30 dias</p>';
+        return;
+    }
+    
+    const maxHoras = Math.max(...obrasOrdenadas.map(o => o[1]));
+    
+    container.innerHTML = obrasOrdenadas.map(([nome, horas]) => {
+        const percent = (horas / maxHoras * 100).toFixed(0);
+        const statusClass = horas > maxHoras * 0.7 ? 'success' : horas > maxHoras * 0.4 ? 'warning' : 'danger';
+        const statusIcon = horas > maxHoras * 0.7 ? '✅' : horas > maxHoras * 0.4 ? '⚠️' : '🔴';
+        
+        return `
+            <div class="bar-item" onclick="abrirDetalheObra('${nome}')">
+                <div class="bar-label">
+                    <span class="bar-status-icon">${statusIcon}</span>
+                    <span title="${nome}">${nome.length > 25 ? nome.substring(0, 25) + '...' : nome}</span>
+                </div>
+                <div class="bar-container">
+                    <div class="bar-fill ${statusClass}" style="width: ${percent}%">
+                        ${horas.toFixed(0)}h
+                    </div>
+                </div>
+                <div class="bar-value">${percent}%</div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Renderizar top 5 funcionários
+function renderizarTopFuncionarios() {
+    const container = document.getElementById('top-funcionarios-list');
+    if (!container) return;
+    
+    // Calcular horas do mês por funcionário
+    const mesAtual = new Date().getMonth();
+    const anoAtual = new Date().getFullYear();
+    
+    const horasPorFunc = {};
+    const obrasPorFunc = {};
+    
+    lancamentos.forEach(lanc => {
+        const data = new Date(lanc.data);
+        if (data.getMonth() === mesAtual && data.getFullYear() === anoAtual) {
+            const funcNome = lanc.funcionario;
+            if (!horasPorFunc[funcNome]) {
+                horasPorFunc[funcNome] = 0;
+                obrasPorFunc[funcNome] = new Set();
+            }
+            horasPorFunc[funcNome] += parseFloat(lanc.horas || 0);
+            if (lanc.obra) {
+                obrasPorFunc[funcNome].add(lanc.obra);
+            }
+        }
+    });
+    
+    // Ordenar e pegar top 5
+    const topFuncs = Object.entries(horasPorFunc)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5);
+    
+    if (topFuncs.length === 0) {
+        container.innerHTML = '<p style="text-align:center;color:#64748b;padding:2rem;">Nenhum lançamento este mês</p>';
+        return;
+    }
+    
+    container.innerHTML = topFuncs.map(([nome, horas], index) => {
+        const func = funcionarios.find(f => f.nome === nome);
+        const funcao = func ? func.funcao : 'Função não informada';
+        const iniciais = nome.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+        const numObras = obrasPorFunc[nome] ? obrasPorFunc[nome].size : 0;
+        
+        // Simular estrelas (5 estrelas para top 3, 4 para 4º, 3 para 5º)
+        const numEstrelas = index < 3 ? 5 : index === 3 ? 4 : 3;
+        const estrelas = '⭐'.repeat(numEstrelas);
+        
+        return `
+            <div class="top-func-item" onclick="abrirDetalheFunc('${nome}')">
+                <div class="top-func-rank">${index + 1}</div>
+                <div class="top-func-avatar">${iniciais}</div>
+                <div class="top-func-info">
+                    <div class="top-func-name">${nome}</div>
+                    <div class="top-func-role">${funcao} • ${numObras} obras</div>
+                </div>
+                <div class="top-func-stats">
+                    <div class="top-func-hours">${horas.toFixed(0)}h</div>
+                    <div class="top-func-stars">${estrelas}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Renderizar cronograma semanal
+function renderizarCronogramaSemanal() {
+    const container = document.getElementById('cronograma-semanal');
+    if (!container) return;
+    
+    const hoje = new Date();
+    const diasSemana = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'];
+    
+    let html = '';
+    let totalHoras = 0;
+    let maxHoras = 0;
+    let diaPico = '';
+    
+    for (let i = 6; i >= 0; i--) {
+        const dia = new Date(hoje);
+        dia.setDate(hoje.getDate() - i);
+        const diaStr = dia.toISOString().split('T')[0];
+        
+        const lancsNoDia = lancamentos.filter(l => l.data === diaStr);
+        const horasNoDia = lancsNoDia.reduce((sum, l) => sum + parseFloat(l.horas || 0), 0);
+        const numLancs = lancsNoDia.length;
+        
+        const isFuturo = dia > hoje;
+        const isHoje = diaStr === hoje.toISOString().split('T')[0];
+        const statusIcon = isFuturo ? '⚫' : horasNoDia > 40 ? '🟢' : horasNoDia > 0 ? '🟡' : '🔴';
+        
+        if (!isFuturo) {
+            totalHoras += horasNoDia;
+            if (horasNoDia > maxHoras) {
+                maxHoras = horasNoDia;
+                diaPico = diasSemana[dia.getDay()];
+            }
+        }
+        
+        html += `
+            <div class="cronograma-day ${isHoje ? 'active' : ''} ${isFuturo ? 'future' : ''}" 
+                 onclick="filtrarAtividadePorDia('${diaStr}')">
+                <div class="day-name">${diasSemana[dia.getDay()]}</div>
+                <div class="day-lancamentos">${isFuturo ? '-' : numLancs}</div>
+                <div class="day-horas">${isFuturo ? '-' : horasNoDia.toFixed(0) + 'h'}</div>
+                <div class="day-status">${statusIcon}</div>
+            </div>
+        `;
+    }
+    
+    container.innerHTML = html;
+    
+    const mediaDiaria = (totalHoras / 7).toFixed(1);
+    document.getElementById('cronograma-stats').innerHTML = 
+        `Média diária: <strong>${mediaDiaria}h</strong> | Pico: <strong>${diaPico} (${maxHoras.toFixed(0)}h)</strong>`;
+}
+
+// Renderizar alertas automáticos
+function renderizarAlertas() {
+    const container = document.getElementById('alertas-list');
+    if (!container) return;
+    
+    const alertas = [];
+    const hoje = new Date();
+    
+    // Alerta 1: Obras sem lançamento há mais de 2 dias
+    obras.forEach(obra => {
+        if (obra.status === 'Em andamento' || obra.status === 'em_andamento') {
+            const ultimoLanc = lancamentos
+                .filter(l => l.obra === obra.nome)
+                .sort((a, b) => new Date(b.data) - new Date(a.data))[0];
+            
+            if (ultimoLanc) {
+                const diasSemLanc = Math.floor((hoje - new Date(ultimoLanc.data)) / (1000 * 60 * 60 * 24));
+                if (diasSemLanc >= 3) {
+                    alertas.push({
+                        tipo: 'atencao',
+                        icone: '⚠️',
+                        titulo: obra.nome,
+                        descricao: `Sem lançamentos há ${diasSemLanc} dias`,
+                        acao: 'Ir para obra →',
+                        onClick: `mostrarAba('obras')`
+                    });
+                }
+            }
+        }
+    });
+    
+    // Alerta 2: Obras próximas do prazo
+    obras.forEach(obra => {
+        if (obra.prazo_final) {
+            const prazo = new Date(obra.prazo_final);
+            const diasRestantes = Math.floor((prazo - hoje) / (1000 * 60 * 60 * 24));
+            
+            if (diasRestantes > 0 && diasRestantes <= 7) {
+                alertas.push({
+                    tipo: 'informativo',
+                    icone: '⏰',
+                    titulo: obra.nome,
+                    descricao: `Prazo em ${diasRestantes} dias (${prazo.toLocaleDateString('pt-BR')})`,
+                    acao: 'Ver cronograma →',
+                    onClick: `mostrarAba('obras')`
+                });
+            }
+        }
+    });
+    
+    // Alerta 3: Funcionários sem avaliação (se houver sistema de avaliações)
+    // Placeholder - você pode implementar verificação real aqui
+    
+    // Limitar a 3 alertas
+    const alertasTop = alertas.slice(0, 3);
+    
+    if (alertasTop.length === 0) {
+        container.innerHTML = `
+            <div style="text-align:center;padding:2rem;color:#10b981;">
+                <div style="font-size:3rem;margin-bottom:0.5rem;">✓</div>
+                <div style="font-weight:700;">Tudo em ordem!</div>
+                <div style="font-size:0.9rem;color:#64748b;">Nenhum alerta pendente</div>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = alertasTop.map(alerta => `
+        <div class="alerta-item ${alerta.tipo}" onclick="${alerta.onClick}">
+            <div class="alerta-icon">${alerta.icone}</div>
+            <div class="alerta-content">
+                <div class="alerta-titulo">${alerta.titulo}</div>
+                <div class="alerta-descricao">${alerta.descricao}</div>
+                <div class="alerta-action">${alerta.acao}</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Renderizar atividade recente
+function renderizarAtividadeRecente() {
+    const container = document.getElementById('atividade-recente');
+    if (!container) return;
+    
+    let lancsParaMostrar = [...lancamentos];
+    
+    // Aplicar filtro
+    const hoje = new Date();
+    const inicioSemana = new Date(hoje);
+    inicioSemana.setDate(hoje.getDate() - hoje.getDay());
+    const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+    
+    if (DashboardState.filtroAtivo === 'hoje') {
+        const hojeStr = hoje.toISOString().split('T')[0];
+        lancsParaMostrar = lancsParaMostrar.filter(l => l.data === hojeStr);
+    } else if (DashboardState.filtroAtivo === 'semana') {
+        lancsParaMostrar = lancsParaMostrar.filter(l => new Date(l.data) >= inicioSemana);
+    } else if (DashboardState.filtroAtivo === 'mes') {
+        lancsParaMostrar = lancsParaMostrar.filter(l => new Date(l.data) >= inicioMes);
+    }
+    
+    // Ordenar por data/hora decrescente
+    lancsParaMostrar.sort((a, b) => {
+        const dataA = new Date(a.criado_em || a.data);
+        const dataB = new Date(b.criado_em || b.data);
+        return dataB - dataA;
+    });
+    
+    // Limitar quantidade
+    const lancsLimitados = lancsParaMostrar.slice(0, DashboardState.atividadesCarregadas);
+    
+    if (lancsLimitados.length === 0) {
+        container.innerHTML = '<p style="text-align:center;color:#64748b;padding:2rem;">Nenhuma atividade neste período</p>';
+        return;
+    }
+    
+    container.innerHTML = lancsLimitados.map(lanc => {
+        const func = funcionarios.find(f => f.nome === lanc.funcionario);
+        const iniciais = lanc.funcionario ? lanc.funcionario.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase() : '??';
+        const funcao = func ? func.funcao : 'Função não informada';
+        
+        const dataLanc = new Date(lanc.criado_em || lanc.data);
+        const horasAtras = Math.floor((hoje - dataLanc) / (1000 * 60 * 60));
+        const minutosAtras = Math.floor((hoje - dataLanc) / (1000 * 60));
+        
+        let tempoRelativo = '';
+        if (minutosAtras < 60) {
+            tempoRelativo = `há ${minutosAtras} min`;
+        } else if (horasAtras < 24) {
+            tempoRelativo = `há ${horasAtras}h`;
+        } else {
+            const diasAtras = Math.floor(horasAtras / 24);
+            tempoRelativo = `há ${diasAtras} dias`;
+        }
+        
+        const horaFormatada = String(dataLanc.getHours()).padStart(2, '0') + ':' + String(dataLanc.getMinutes()).padStart(2, '0');
+        
+        return `
+            <div class="activity-item">
+                <div class="activity-avatar">${iniciais}</div>
+                <div class="activity-content">
+                    <div class="activity-header">
+                        <span class="activity-time">🕐 ${horaFormatada}</span>
+                        <span class="activity-relative">• ${tempoRelativo}</span>
+                    </div>
+                    <div class="activity-text">${lanc.funcionario} → ${lanc.obra || 'Sem obra'}</div>
+                    <div class="activity-details">
+                        <span>${parseFloat(lanc.horas || 0).toFixed(1)} horas</span>
+                        <span>•</span>
+                        <span class="activity-badge" style="background:#e3f2fd;color:#1976d2;">${funcao}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    // Mostrar/ocultar botão "carregar mais"
+    const btnLoadMore = document.getElementById('load-more-activities');
+    if (btnLoadMore) {
+        btnLoadMore.style.display = lancsParaMostrar.length > DashboardState.atividadesCarregadas ? 'block' : 'none';
+    }
+}
+
+// Setup filtros de atividade
+function setupFiltrosAtividade() {
+    const botoes = document.querySelectorAll('.filter-pill');
+    botoes.forEach(btn => {
+        btn.addEventListener('click', () => {
+            botoes.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            DashboardState.filtroAtivo = btn.dataset.filter;
+            DashboardState.atividadesCarregadas = 10;
+            renderizarAtividadeRecente();
+        });
+    });
+}
+
+// Carregar mais atividades
+window.carregarMaisAtividades = function() {
+    DashboardState.atividadesCarregadas += 10;
+    renderizarAtividadeRecente();
+};
+
+// Filtrar atividade por dia específico
+window.filtrarAtividadePorDia = function(diaStr) {
+    const btnHoje = document.querySelector('.filter-pill[data-filter="hoje"]');
+    if (btnHoje) {
+        document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+        btnHoje.classList.add('active');
+    }
+    DashboardState.filtroAtivo = 'hoje';
+    // Aqui você pode adicionar lógica para filtrar dia específico se necessário
+    renderizarAtividadeRecente();
+};
+
+// Funções auxiliares de navegação dos cards
+window.abrirDetalheCusto = function() {
+    console.log('📊 Abrindo detalhes de custo...');
+    alert('Modal de breakdown de custos por obra (em desenvolvimento)');
+};
+
+window.abrirListaFuncionarios = function() {
+    mostrarAba('funcionarios');
+};
+
+window.abrirCronogramaObras = function() {
+    mostrarAba('obras');
+};
+
+window.abrirLancamentosHoje = function() {
+    mostrarAba('lancamentos');
+};
+
+window.abrirDetalheObra = function(nomeObra) {
+    console.log('🏗️ Abrindo detalhes da obra:', nomeObra);
+    mostrarAba('obras');
+};
+
+window.abrirDetalheFunc = function(nomeFunc) {
+    console.log('👷 Abrindo detalhes do funcionário:', nomeFunc);
+    mostrarAba('funcionarios');
+};
+
+window.verTodosAlertas = function() {
+    alert('Modal com todos os alertas (em desenvolvimento)');
+};
+
+// Interceptar abertura da aba dashboard
+const originalMostrarAba3 = window.mostrarAba;
+window.mostrarAba = function(abaId) {
+    if (originalMostrarAba3) {
+        originalMostrarAba3(abaId);
+    }
+    
+    if (abaId === 'dashboard') {
+        setTimeout(() => {
+            initDashboard();
+        }, 100);
+    }
+    
+    // Manter avaliações funcionando
+    if (abaId === 'avaliacoes') {
+        setTimeout(() => {
+            initAvaliacoes();
+        }, 100);
+    }
+};
+
+console.log('✅ Dashboard Executivo carregado!');

@@ -17,6 +17,18 @@ class AppStore {
             responsaveis: [],
             avaliacoes: [],
 
+            // Tarefas
+            tarefas: [],
+            comentarios: {}, // Keyed by tarefa_id
+            tarefasFilters: {
+                status: null,
+                prioridade: null,
+                funcionario: null,
+                obra: null,
+                empresa: null,
+                prazo: null
+            },
+
             // UI State
             loading: false,
             currentTab: 'dashboard',
@@ -216,6 +228,16 @@ class AppStore {
             funcoes: [],
             responsaveis: [],
             avaliacoes: [],
+            tarefas: [],
+            comentarios: {},
+            tarefasFilters: {
+                status: null,
+                prioridade: null,
+                funcionario: null,
+                obra: null,
+                empresa: null,
+                prazo: null
+            },
             loading: false,
             currentTab: 'dashboard',
             filters: {},
@@ -344,4 +366,126 @@ export const uiActions = {
     setCurrentTab: (tab) => store.setState('currentTab', tab),
     setFilters: (filters) => store.setState('filters', filters),
     setUsuario: (usuario) => store.setState('usuario', usuario)
+};
+
+// Tarefas Actions
+export const tarefasActions = {
+    set: (data) => store.setState('tarefas', data),
+    add: (item) => store.push('tarefas', item),
+    update: (id, updates) => store.update('tarefas', id, updates),
+    remove: (id) => store.remove('tarefas', id),
+    findById: (id) => store.findById('tarefas', id),
+    getAll: () => store.getState('tarefas'),
+
+    // Filtros específicos
+    getByStatus: (status) => store.filter('tarefas', t => t.status === status),
+    getByFuncionario: (funcionarioId) => store.filter('tarefas', t => t.funcionario_id == funcionarioId),
+    getAtrasadas: () => {
+        const hoje = new Date().toISOString().split('T')[0];
+        return store.filter('tarefas', t =>
+            t.status !== 'concluido' &&
+            t.status !== 'cancelado' &&
+            t.data_prazo &&
+            t.data_prazo < hoje
+        );
+    },
+
+    // Aplicar todos os filtros ativos
+    getFiltered: () => {
+        const filters = store.getState('tarefasFilters');
+        let tarefas = store.getState('tarefas');
+
+        if (filters.status) {
+            tarefas = tarefas.filter(t => t.status === filters.status);
+        }
+        if (filters.prioridade) {
+            tarefas = tarefas.filter(t => t.prioridade === filters.prioridade);
+        }
+        if (filters.funcionario) {
+            tarefas = tarefas.filter(t => t.funcionario_id == filters.funcionario);
+        }
+        if (filters.obra) {
+            tarefas = tarefas.filter(t => t.obra_id == filters.obra);
+        }
+        if (filters.empresa) {
+            tarefas = tarefas.filter(t => t.empresa_id == filters.empresa);
+        }
+        if (filters.prazo) {
+            const hoje = new Date();
+            hoje.setHours(0, 0, 0, 0);
+
+            tarefas = tarefas.filter(t => {
+                if (!t.data_prazo) return false;
+                const prazo = new Date(t.data_prazo);
+                prazo.setHours(0, 0, 0, 0);
+
+                switch (filters.prazo) {
+                    case 'atrasada':
+                        return prazo < hoje && t.status !== 'concluido' && t.status !== 'cancelado';
+                    case 'hoje':
+                        return prazo.getTime() === hoje.getTime();
+                    case 'semana': {
+                        const semana = new Date(hoje);
+                        semana.setDate(hoje.getDate() + 7);
+                        return prazo >= hoje && prazo <= semana;
+                    }
+                    case 'mes': {
+                        const mes = new Date(hoje);
+                        mes.setMonth(hoje.getMonth() + 1);
+                        return prazo >= hoje && prazo <= mes;
+                    }
+                    default:
+                        return true;
+                }
+            });
+        }
+
+        return tarefas;
+    }
+};
+
+// Comentários Actions
+export const comentariosActions = {
+    setForTarefa: (tarefaId, comentarios) => {
+        const current = store.getState('comentarios');
+        store.setState('comentarios', { ...current, [tarefaId]: comentarios });
+    },
+    addToTarefa: (tarefaId, comentario) => {
+        const current = store.getState('comentarios');
+        const tarefaComentarios = current[tarefaId] || [];
+        store.setState('comentarios', {
+            ...current,
+            [tarefaId]: [comentario, ...tarefaComentarios]
+        });
+    },
+    getForTarefa: (tarefaId) => {
+        const comentarios = store.getState('comentarios');
+        return comentarios[tarefaId] || [];
+    },
+    removeFromTarefa: (tarefaId, comentarioId) => {
+        const current = store.getState('comentarios');
+        const tarefaComentarios = current[tarefaId] || [];
+        store.setState('comentarios', {
+            ...current,
+            [tarefaId]: tarefaComentarios.filter(c => c.id !== comentarioId)
+        });
+    }
+};
+
+// Filtros de Tarefas Actions
+export const tarefasFiltersActions = {
+    set: (filters) => store.setState('tarefasFilters', filters),
+    update: (key, value) => {
+        const current = store.getState('tarefasFilters');
+        store.setState('tarefasFilters', { ...current, [key]: value });
+    },
+    reset: () => store.setState('tarefasFilters', {
+        status: null,
+        prioridade: null,
+        funcionario: null,
+        obra: null,
+        empresa: null,
+        prazo: null
+    }),
+    get: () => store.getState('tarefasFilters')
 };

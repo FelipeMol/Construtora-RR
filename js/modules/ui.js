@@ -147,6 +147,37 @@ export function showTab(tabName) {
 
         // Salvar última tab visitada
         salvarLocal('ultimaTab', tabName);
+
+        // Inicializar relatórios se necessário (função do script.js)
+        if (tabName === 'relatorios' && typeof window.initRelatorios === 'function') {
+            setTimeout(() => window.initRelatorios(), 100);
+        }
+
+        // Carregar usuários quando abrir a aba de permissões
+        if (tabName === 'permissoes') {
+            setTimeout(() => {
+                console.log('🔐 Aba Permissões aberta - carregando usuários...');
+                const tabPermissoes = document.getElementById('permissoes');
+                console.log('📋 Tab permissoes existe:', tabPermissoes ? 'SIM' : 'NÃO');
+                console.log('📋 Tab permissoes tem classe active:', tabPermissoes?.classList.contains('active') ? 'SIM' : 'NÃO');
+                console.log('📋 Tab permissoes display:', tabPermissoes ? window.getComputedStyle(tabPermissoes).display : 'N/A');
+                
+                const listaUsuarios = document.getElementById('lista-usuarios');
+                if (listaUsuarios) {
+                    console.log('✓ Elemento lista-usuarios encontrado');
+                    console.log('📋 lista-usuarios visível:', window.getComputedStyle(listaUsuarios).display !== 'none' ? 'SIM' : 'NÃO');
+                    console.log('📋 lista-usuarios parent visível:', window.getComputedStyle(listaUsuarios.parentElement).display !== 'none' ? 'SIM' : 'NÃO');
+                    
+                    if (typeof window.carregarUsuarios === 'function') {
+                        window.carregarUsuarios();
+                    } else {
+                        console.error('❌ Função carregarUsuarios não encontrada no window');
+                    }
+                } else {
+                    console.error('❌ Elemento lista-usuarios não encontrado no DOM');
+                }
+            }, 100);
+        }
     }
 }
 
@@ -445,9 +476,408 @@ function addNotificationStyles() {
     document.head.appendChild(style);
 }
 
+/**
+ * Fechar modal por ID
+ */
+export function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.remove('active');
+    }
+}
+
+/**
+ * Aplicar permissões na UI
+ * Esconde/mostra elementos conforme permissões do usuário
+ */
+export async function aplicarPermissoesUI() {
+    // Importar dinamicamente para evitar dependência circular
+    const { ehAdmin, temPermissao, obterPermissoes } = await import('./auth.js');
+
+    // 1. Esconder menu Permissões para não-admin
+    const menuPermissoes = document.querySelector('[onclick*="permissoes"]');
+    const abaPermissoes = document.getElementById('permissoes');
+
+    if (!ehAdmin()) {
+        if (menuPermissoes) {
+            menuPermissoes.style.display = 'none';
+        }
+        if (abaPermissoes) {
+            abaPermissoes.style.display = 'none';
+        }
+    }
+
+    // Admin vê tudo - retorna aqui para não aplicar restrições
+    if (ehAdmin()) {
+        return;
+    }
+
+    const permissoes = obterPermissoes();
+
+    // Lista de módulos e seus IDs de abas
+    const modulosUI = [
+        { modulo: 'dashboard', aba: 'dashboard', menuSelector: '[onclick*="dashboard"]' },
+        { modulo: 'lancamentos', aba: 'lancamentos', menuSelector: '[onclick*="lancamentos"]' },
+        { modulo: 'funcionarios', aba: 'funcionarios', menuSelector: '[onclick*="funcionarios"]' },
+        { modulo: 'obras', aba: 'obras', menuSelector: '[onclick*="obras"]' },
+        { modulo: 'empresas', aba: 'empresas', menuSelector: '[onclick*="empresas"]' },
+        { modulo: 'tarefas', aba: 'tarefas', menuSelector: '[onclick*="tarefas"]' },
+        { modulo: 'base', aba: 'base', menuSelector: '[onclick*="base"]' },
+        { modulo: 'relatorios', aba: 'relatorios', menuSelector: '[onclick*="relatorios"]' },
+        { modulo: 'avaliacoes', aba: 'avaliacoes', menuSelector: '[onclick*="avaliacoes"]' },
+        { modulo: 'projetos', aba: 'projetos', menuSelector: '[onclick*="projetos"]' },
+        { modulo: 'usuarios', aba: 'usuarios', menuSelector: '[onclick*="usuarios"]' },
+        { modulo: 'configuracoes', aba: 'configuracoes', menuSelector: '[onclick*="configuracoes"]' },
+        { modulo: 'backup', aba: 'backup', menuSelector: '[onclick*="backup"]' }
+    ];
+
+    modulosUI.forEach(({ modulo, aba, menuSelector }) => {
+        const podeVisualizar = temPermissao(modulo, 'visualizar');
+        const podeCriar = temPermissao(modulo, 'criar');
+        const podeEditar = temPermissao(modulo, 'editar');
+        const podeExcluir = temPermissao(modulo, 'excluir');
+
+        // 1. Esconder item do menu se não pode visualizar
+        const menuItem = document.querySelector(menuSelector);
+        if (menuItem && !podeVisualizar) {
+            menuItem.style.display = 'none';
+        }
+
+        // 2. Substituir conteúdo da aba se não pode visualizar
+        const abaEl = document.getElementById(aba);
+        if (abaEl && !podeVisualizar) {
+            abaEl.innerHTML = `
+                <div class="sem-permissao">
+                    <div class="sem-permissao-icon">🔒</div>
+                    <h2>Acesso Restrito</h2>
+                    <p>Você não tem permissão para visualizar este módulo.</p>
+                    <p class="text-muted">Entre em contato com o administrador para solicitar acesso.</p>
+                </div>
+            `;
+        }
+
+        // 3. Esconder botões conforme permissões (se pode visualizar)
+        if (abaEl && podeVisualizar) {
+            // Botões "Adicionar" / "Criar"
+            if (!podeCriar) {
+                const botoesAdicionar = abaEl.querySelectorAll('[onclick*="adicionar"], [onclick*="criar"], .btn-add, .btn-criar');
+                botoesAdicionar.forEach(btn => btn.style.display = 'none');
+            }
+
+            // Botões "Editar"
+            if (!podeEditar) {
+                const botoesEditar = abaEl.querySelectorAll('[onclick*="editar"], .btn-editar');
+                botoesEditar.forEach(btn => btn.style.display = 'none');
+            }
+
+            // Botões "Excluir"
+            if (!podeExcluir) {
+                const botoesExcluir = abaEl.querySelectorAll('[onclick*="excluir"], .btn-excluir, .btn-danger');
+                botoesExcluir.forEach(btn => btn.style.display = 'none');
+            }
+        }
+    });
+
+    // Adicionar estilos para mensagem de sem permissão
+    addSemPermissaoStyles();
+}
+
+/**
+ * Adicionar estilos para mensagem de sem permissão
+ */
+function addSemPermissaoStyles() {
+    if (document.getElementById('sem-permissao-styles')) return;
+
+    const style = document.createElement('style');
+    style.id = 'sem-permissao-styles';
+    style.textContent = `
+        .sem-permissao {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 400px;
+            text-align: center;
+            padding: 40px 20px;
+        }
+        .sem-permissao-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        .sem-permissao h2 {
+            margin: 0 0 12px 0;
+            color: #333;
+            font-size: 28px;
+        }
+        .sem-permissao p {
+            margin: 0 0 8px 0;
+            color: #666;
+            font-size: 16px;
+        }
+        .sem-permissao .text-muted {
+            color: #999;
+            font-size: 14px;
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+/**
+ * Mostrar modal de confirmação
+ * @param {string} mensagem - Mensagem a exibir (pode conter HTML)
+ * @param {string} titulo - Título do modal (opcional)
+ * @returns {Promise<boolean>} True se confirmou, False se cancelou
+ */
+export function confirmar(mensagem, titulo = 'Confirmação') {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('modal-overlay');
+        const modalTitulo = document.getElementById('modal-titulo');
+        const modalConteudo = document.getElementById('modal-conteudo');
+        const btnConfirmar = document.getElementById('modal-confirmar');
+
+        if (!modal || !modalTitulo || !modalConteudo || !btnConfirmar) {
+            // Fallback para confirm nativo se elementos não existirem
+            const textoLimpo = mensagem.replace(/<[^>]*>/g, '');
+            resolve(window.confirm(textoLimpo));
+            return;
+        }
+
+        // Configurar modal
+        modalTitulo.textContent = titulo;
+        modalConteudo.innerHTML = mensagem;
+
+        // Mostrar modal
+        modal.classList.add('show');
+        modal.style.display = 'flex';
+
+        // Handler de confirmação (executar apenas uma vez)
+        const handleConfirm = () => {
+            cleanup();
+            resolve(true);
+        };
+
+        // Handler de cancelamento
+        const handleCancel = () => {
+            cleanup();
+            resolve(false);
+        };
+
+        // Cleanup - remover listeners e fechar modal
+        const cleanup = () => {
+            modal.classList.remove('show');
+            modal.style.display = 'none';
+            btnConfirmar.removeEventListener('click', handleConfirm);
+            modal.removeEventListener('click', handleBackdropClick);
+        };
+
+        // Click no backdrop
+        const handleBackdropClick = (e) => {
+            if (e.target === modal) {
+                handleCancel();
+            }
+        };
+
+        // Adicionar listeners
+        btnConfirmar.addEventListener('click', handleConfirm, { once: true });
+        modal.addEventListener('click', handleBackdropClick);
+
+        // Expor função fecharModal globalmente para o botão Cancelar
+        window.fecharModal = handleCancel;
+    });
+}
+
+/**
+ * Sistema de Modais de Edição
+ */
+export function abrirModalEdicao(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.add('active');
+        modal.style.display = 'flex';
+        console.log(`✅ Modal ${modalId} aberto`);
+    }
+}
+
+export function fecharModalEdicao(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+        console.log(`🚪 Modal ${modalId} fechado`);
+    }
+}
+
+// Aliases para compatibilidade com onclick no HTML
+export const abrirModal = abrirModalEdicao;
+export const fecharModal = fecharModalEdicao;
+
+/**
+ * Configurar modais de edição com funcionalidades avançadas
+ * - Fechar ao clicar no backdrop
+ * - Fechar com tecla ESC
+ */
+export function configurarModaisEdicao() {
+    console.log('⚙️ Configurando modais de edição...');
+
+    const modais = [
+        'modal-editar-empresa',
+        'modal-editar-funcionario',
+        'modal-editar-obra'
+    ];
+
+    // Adicionar event listener para fechar ao clicar no backdrop
+    modais.forEach(modalId => {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.addEventListener('click', function(event) {
+                // Fechar apenas se clicou no backdrop (fundo), não no conteúdo
+                if (event.target === modal) {
+                    fecharModalEdicao(modalId);
+                }
+            });
+            console.log(`✅ Modal ${modalId} configurado`);
+        }
+    });
+
+    // Adicionar event listener global para tecla ESC
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            // Verificar qual modal está aberto e fechar
+            modais.forEach(modalId => {
+                const modal = document.getElementById(modalId);
+                if (modal && modal.classList.contains('show')) {
+                    fecharModalEdicao(modalId);
+                    console.log(`🚪 Modal ${modalId} fechado com ESC`);
+                }
+            });
+        }
+    });
+}
+
+/**
+ * Toggle do dropdown de usuário no header
+ */
+export function toggleUserDropdown() {
+    const dropdown = document.querySelector('.user-dropdown');
+    const menu = document.getElementById('user-dropdown-menu');
+
+    if (dropdown && menu) {
+        const isActive = menu.classList.contains('active');
+
+        if (isActive) {
+            // Fechar
+            menu.classList.remove('active');
+            dropdown.classList.remove('active');
+        } else {
+            // Abrir
+            menu.classList.add('active');
+            dropdown.classList.add('active');
+        }
+    }
+}
+
+/**
+ * Fechar dropdown ao clicar fora
+ */
+function setupUserDropdownClickOutside() {
+    document.addEventListener('click', (e) => {
+        const dropdown = document.querySelector('.user-dropdown');
+        const menu = document.getElementById('user-dropdown-menu');
+
+        if (dropdown && menu && menu.classList.contains('active')) {
+            // Se clicou fora do dropdown, fechar
+            if (!dropdown.contains(e.target)) {
+                menu.classList.remove('active');
+                dropdown.classList.remove('active');
+            }
+        }
+    });
+}
+
+/**
+ * Atualizar nome do usuário no header
+ */
+export function atualizarNomeUsuario() {
+    const nomeDisplay = document.getElementById('user-name-display');
+    if (nomeDisplay) {
+        // Importar dinamicamente para evitar dependência circular
+        import('./auth.js').then(({ obterUsuario }) => {
+            const usuario = obterUsuario();
+            if (usuario && usuario.nome) {
+                nomeDisplay.textContent = usuario.nome;
+            } else {
+                nomeDisplay.textContent = 'Usuário';
+            }
+        });
+    }
+}
+
+/**
+ * Fazer logout
+ */
+export async function fazerLogout() {
+    const confirmar = await window.confirm('Deseja realmente sair do sistema?');
+
+    if (!confirmar) {
+        return;
+    }
+
+    try {
+        showLoading('Saindo...');
+
+        // Importar módulo de autenticação
+        const { logout } = await import('./auth.js');
+
+        // Fazer logout (limpa token e localStorage)
+        logout();
+
+        // Pequeno delay para mostrar mensagem
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // Recarregar página (vai mostrar tela de login)
+        window.location.reload();
+
+    } catch (error) {
+        console.error('Erro ao fazer logout:', error);
+        hideLoading();
+        showNotification('Erro ao sair. Tente novamente.', 'error');
+    }
+}
+
+/**
+ * Abrir configurações de usuário (Minha Conta)
+ */
+export function abrirConfiguracoesUsuario() {
+    // Por enquanto, mostrar a tab de usuários
+    // Futuramente, criar uma tab específica de "Minha Conta"
+    showTab('usuarios');
+    showNotification('Em breve: tela de configurações pessoais', 'info');
+}
+
 // Exportar funções globais para compatibilidade com onclick no HTML
 if (typeof window !== 'undefined') {
     window.showTab = showTab;
     window.toggleSidebar = toggleSidebar;
     window.toggleSubmenu = toggleSubmenu;
+    window.toggleUserDropdown = toggleUserDropdown;
+    window.fazerLogout = fazerLogout;
+    window.abrirConfiguracoesUsuario = abrirConfiguracoesUsuario;
+
+    // Funções de modal
+    window.abrirModal = abrirModal;
+    window.fecharModal = fecharModal;
+    window.abrirModalEdicao = abrirModalEdicao;
+    window.fecharModalEdicao = fecharModalEdicao;
+
+    // Setup ao carregar
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            setupUserDropdownClickOutside();
+            atualizarNomeUsuario();
+        });
+    } else {
+        setupUserDropdownClickOutside();
+        atualizarNomeUsuario();
+    }
 }

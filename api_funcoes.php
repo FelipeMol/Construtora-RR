@@ -1,11 +1,16 @@
 <?php
 require_once 'config.php';
 
+// Middleware de autenticação
+requer_autenticacao();
+
 // Determinar ação baseada no método HTTP
 $metodo = $_SERVER['REQUEST_METHOD'];
 
 switch ($metodo) {
     case 'GET':
+        requer_permissao('base', 'visualizar');
+
         // Listar todas as funções
         try {
             $filtro = isset($_GET['ativo']) ? $_GET['ativo'] : null;
@@ -26,6 +31,7 @@ switch ($metodo) {
         break;
     
     case 'POST':
+        requer_permissao('base', 'criar');
         // Adicionar nova função
         $dados = obter_dados_post();
         
@@ -61,6 +67,7 @@ switch ($metodo) {
         break;
     
     case 'PUT':
+        requer_permissao('base', 'editar');
         // Atualizar função
         $id = $_GET['id'] ?? null;
         
@@ -109,6 +116,7 @@ switch ($metodo) {
         break;
     
     case 'DELETE':
+        requer_permissao('base', 'excluir');
         // Excluir função
         $id = $_GET['id'] ?? null;
         

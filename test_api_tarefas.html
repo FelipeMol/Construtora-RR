@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test API Tarefas</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+        }
+        .log {
+            background: #252526;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #007acc;
+        }
+        .error {
+            border-left-color: #f48771;
+            background: #3d2020;
+        }
+        .success {
+            border-left-color: #89d185;
+            background: #1e3a1e;
+        }
+        .warning {
+            border-left-color: #f2cc60;
+            background: #3d3420;
+        }
+        h1 { color: #4ec9b0; }
+        h2 { color: #dcdcaa; }
+        pre {
+            background: #1e1e1e;
+            padding: 10px;
+            overflow-x: auto;
+            border: 1px solid #3c3c3c;
+        }
+        button {
+            background: #0e639c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 3px;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #1177bb;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Teste de Diagnóstico - API Tarefas</h1>
+
+    <button onclick="testarAPI()">🚀 Executar Teste Completo</button>
+    <button onclick="limparLogs()">🗑️ Limpar Logs</button>
+
+    <div id="logs"></div>
+
+    <script>
+        const BASE_URL = 'http://sh00086.teste.website/~hg253b74';
+        let logContainer = document.getElementById('logs');
+
+        function limparLogs() {
+            logContainer.innerHTML = '';
+        }
+
+        function log(message, type = 'log') {
+            const div = document.createElement('div');
+            div.className = `log ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong> - ${message}`;
+            logContainer.appendChild(div);
+            console.log(message);
+        }
+
+        function logJSON(title, obj) {
+            log(`<strong>${title}:</strong><pre>${JSON.stringify(obj, null, 2)}</pre>`);
+        }
+
+        async function testarAPI() {
+            limparLogs();
+            log('<h2>🧪 Iniciando testes...</h2>');
+
+            // 1. Verificar token
+            log('<h2>1️⃣ Verificando Token JWT</h2>');
+            const token = localStorage.getItem('token');
+            if (!token) {
+                log('❌ Token não encontrado no localStorage', 'error');
+                log('💡 Faça login primeiro no sistema principal', 'warning');
+                return;
+            }
+            log('✅ Token encontrado', 'success');
+            log(`Token (primeiros 50 chars): ${token.substring(0, 50)}...`);
+
+            // 2. Verificar usuário
+            log('<h2>2️⃣ Verificando Usuário Logado</h2>');
+            const usuario = localStorage.getItem('usuario');
+            if (usuario) {
+                const user = JSON.parse(usuario);
+                logJSON('Usuário', user);
+                log(`✅ Logado como: ${user.nome} (${user.tipo})`, 'success');
+            }
+
+            // 3. Testar API de Auth (verificar token)
+            log('<h2>3️⃣ Testando API de Autenticação</h2>');
+            try {
+                const authResponse = await fetch(`${BASE_URL}/api_auth.php`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ action: 'verify' })
+                });
+
+                log(`Status: ${authResponse.status} ${authResponse.statusText}`);
+
+                if (authResponse.ok) {
+                    const authData = await authResponse.json();
+                    logJSON('Resposta de Autenticação', authData);
+
+                    if (authData.dados && authData.dados.permissoes) {
+                        log('✅ Permissões carregadas', 'success');
+                        logJSON('Permissões do usuário', authData.dados.permissoes);
+
+                        // Verificar se tem permissão de tarefas
+                        const tarefasPerm = authData.dados.permissoes.find(p => p.modulo === 'tarefas');
+                        if (tarefasPerm) {
+                            log('✅ Módulo "tarefas" encontrado nas permissões', 'success');
+                            logJSON('Permissões de Tarefas', tarefasPerm);
+                        } else {
+                            log('⚠️ Módulo "tarefas" NÃO encontrado nas permissões', 'warning');
+                        }
+                    }
+                } else {
+                    const errorText = await authResponse.text();
+                    log(`❌ Erro na autenticação: ${errorText}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Erro ao chamar API de Auth: ${error.message}`, 'error');
+            }
+
+            // 4. Testar API de Tarefas
+            log('<h2>4️⃣ Testando API de Tarefas (GET)</h2>');
+            try {
+                const tarefasResponse = await fetch(`${BASE_URL}/api_tarefas.php`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                log(`Status: ${tarefasResponse.status} ${tarefasResponse.statusText}`);
+
+                if (tarefasResponse.ok) {
+                    const tarefasData = await tarefasResponse.json();
+                    logJSON('Resposta de Tarefas', tarefasData);
+
+                    if (tarefasData.sucesso) {
+                        log(`✅ API funcionando! ${tarefasData.dados?.length || 0} tarefas retornadas`, 'success');
+                    } else {
+                        log(`⚠️ API retornou sucesso=false: ${tarefasData.mensagem}`, 'warning');
+                    }
+                } else {
+                    const errorText = await tarefasResponse.text();
+                    log(`❌ ERRO ${tarefasResponse.status}: ${errorText}`, 'error');
+
+                    // Tentar parsear como JSON
+                    try {
+                        const errorJSON = JSON.parse(errorText);
+                        logJSON('Detalhes do Erro', errorJSON);
+                    } catch (e) {
+                        log('Resposta não é JSON válido. Texto bruto:', 'error');
+                        log(`<pre>${errorText.substring(0, 1000)}</pre>`, 'error');
+                    }
+                }
+            } catch (error) {
+                log(`❌ Erro ao chamar API de Tarefas: ${error.message}`, 'error');
+            }
+
+            // 5. Diagnóstico final
+            log('<h2>5️⃣ Diagnóstico Final</h2>');
+            log('Se você vê erro 500, as possíveis causas são:', 'warning');
+            log('1. Coluna modulos.ativo ainda é ENUM (não foi migrada)', 'warning');
+            log('2. Módulo "tarefas" não existe na tabela modulos', 'warning');
+            log('3. Erro de sintaxe SQL no PHP', 'warning');
+            log('4. Erro de permissões do banco de dados', 'warning');
+
+            log('<h2>✅ Teste concluído!</h2>');
+        }
+
+        // Auto-executar ao carregar
+        window.addEventListener('load', () => {
+            log('Página carregada. Clique em "Executar Teste" para começar.');
+        });
+    </script>
+</body>
+</html>

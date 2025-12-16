@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(wc:*)",
+      "Bash(tree:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(ls:*)",
+      "Bash(git rm:*)",
+      "Bash(dir:*)",
+      "Bash(grep:*)",
+      "Bash(echo:*)",
+      "Bash(php -r:*)"
+    ]
+  }
+}

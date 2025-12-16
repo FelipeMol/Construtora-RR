@@ -21,7 +21,21 @@
         </div>
         <div class="header-right">
             <span class="user-info" id="data-hoje"></span>
-            <span class="user-info">👤 Viviane</span>
+            <div class="user-dropdown">
+                <button class="user-info user-dropdown-toggle" id="user-dropdown-toggle" onclick="toggleUserDropdown()">
+                    👤 <span id="user-name-display">Carregando...</span>
+                    <span class="user-dropdown-arrow">▼</span>
+                </button>
+                <div class="user-dropdown-menu" id="user-dropdown-menu">
+                    <div class="user-dropdown-item" onclick="abrirConfiguracoesUsuario()">
+                        ⚙️ Minha Conta
+                    </div>
+                    <div class="user-dropdown-divider"></div>
+                    <div class="user-dropdown-item logout-item" onclick="fazerLogout()">
+                        🚪 Sair
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -75,16 +89,26 @@
                 <span class="text">BASE</span>
             </div>
             
+            <div class="sidebar-item" onclick="showTab('tarefas')">
+                <span class="icon">📋</span>
+                <span class="text">Tarefas</span>
+            </div>
+
             <div class="sidebar-item" onclick="showTab('relatorios')">
                 <span class="icon">📊</span>
                 <span class="text">Relatórios</span>
             </div>
-            
+
             <div class="sidebar-item" onclick="showTab('configuracoes')">
                 <span class="icon">⚙️</span>
                 <span class="text">Configurações</span>
             </div>
-            
+
+            <div class="sidebar-item" onclick="showTab('permissoes')">
+                <span class="icon">🔐</span>
+                <span class="text">Permissões</span>
+            </div>
+
             <div class="sidebar-item" onclick="showTab('backup')">
                 <span class="icon">💾</span>
                 <span class="text">Backup</span>
@@ -97,55 +121,132 @@
         <div class="container-fluid">
         <!-- Aba Dashboard -->
         <div id="dashboard" class="tab-content active">
-            <div class="welcome-section">
-                <h1 class="welcome-title">🌟 Bem-vinda, Viviane!</h1>
-                <p class="welcome-subtitle">Painel de Controle - Sistema de Obras e Funcionários</p>
-                <div class="current-time" id="current-time"></div>
-            </div>
-
-            <div class="quick-stats">
-                <div class="quick-stat-item">
-                    <div class="quick-stat-number" id="dash-funcionarios">0</div>
-                    <div class="quick-stat-label">Funcionários Ativos</div>
+            <!-- Header de Boas-Vindas -->
+            <div class="dash-header">
+                <div class="dash-header-content">
+                    <h1 class="dash-title">🌟 Bem-vindo!</h1>
+                    <div class="dash-datetime" id="dash-datetime">Carregando...</div>
+                    <div class="dash-summary" id="dash-summary">
+                        <span id="dash-summary-obras">-</span> • 
+                        <span id="dash-summary-func">-</span> • 
+                        <span id="dash-summary-ausentes">-</span>
+                    </div>
                 </div>
-                <div class="quick-stat-item">
-                    <div class="quick-stat-number" id="dash-obras">0</div>
-                    <div class="quick-stat-label">Obras em Andamento</div>
-                </div>
-                <div class="quick-stat-item">
-                    <div class="quick-stat-number" id="dash-horas-hoje">0h</div>
-                    <div class="quick-stat-label">Horas Hoje</div>
-                </div>
-                <div class="quick-stat-item">
-                    <div class="quick-stat-number" id="dash-lancamentos-mes">0</div>
-                    <div class="quick-stat-label">Lançamentos este Mês</div>
+                <div class="dash-sync-indicator" id="dash-sync" title="Sincronizado">
+                    <span class="sync-dot"></span>
                 </div>
             </div>
 
-            <div class="charts-grid">
-                <div class="chart-card">
-                    <h3 class="chart-title">📊 Top Funcionários (Este Mês)</h3>
-                    <div id="chart-funcionarios" class="simple-chart">
-                        <!-- Barras simples serão geradas aqui -->
+            <!-- Cards de Métricas Principais (4 cards) -->
+            <div class="dash-metrics-grid">
+                <!-- Card 1: Custo do Mês -->
+                <div class="dash-metric-card">
+                    <div class="metric-icon">💰</div>
+                    <div class="metric-content">
+                        <div class="metric-label">CUSTO DO MÊS</div>
+                        <div class="metric-value" id="metric-custo">R$ 0,00</div>
+                        <div class="metric-change" id="metric-custo-change">
+                            <span class="change-badge">+0%</span> vs mês anterior
+                        </div>
                     </div>
+                    <button class="metric-link" onclick="abrirDetalheCusto()">ver detalhes ↗</button>
                 </div>
-                
-                <div class="chart-card">
-                    <h3 class="chart-title">🏢 Horas por Obra</h3>
-                    <div id="chart-obras" class="simple-chart">
-                        <!-- Barras simples serão geradas aqui -->
+
+                <!-- Card 2: Funcionários Ativos -->
+                <div class="dash-metric-card">
+                    <div class="metric-icon">👷</div>
+                    <div class="metric-content">
+                        <div class="metric-label">ATIVOS HOJE</div>
+                        <div class="metric-value" id="metric-ativos">0/0</div>
+                        <div class="metric-change" id="metric-ativos-ausentes">
+                            <span class="ausentes-count">0 ausentes</span>
+                        </div>
                     </div>
+                    <button class="metric-link" onclick="abrirListaFuncionarios()">ver lista ↗</button>
+                </div>
+
+                <!-- Card 3: Obras em Andamento -->
+                <div class="dash-metric-card">
+                    <div class="metric-icon">🏗️</div>
+                    <div class="metric-content">
+                        <div class="metric-label">OBRAS</div>
+                        <div class="metric-value" id="metric-obras">0 em andamento</div>
+                        <div class="metric-change" id="metric-obras-atrasadas">
+                            <span class="atrasadas-badge">0 atrasadas</span>
+                        </div>
+                    </div>
+                    <button class="metric-link" onclick="abrirCronogramaObras()">ver cronograma ↗</button>
+                </div>
+
+                <!-- Card 4: Horas Hoje -->
+                <div class="dash-metric-card">
+                    <div class="metric-icon">⏱️</div>
+                    <div class="metric-content">
+                        <div class="metric-label">HORAS HOJE</div>
+                        <div class="metric-value" id="metric-horas">0h</div>
+                        <div class="metric-change" id="metric-lancamentos">
+                            <span class="lancamentos-count">0 lançamentos</span>
+                        </div>
+                    </div>
+                    <button class="metric-link" onclick="abrirLancamentosHoje()">ver lançamentos ↗</button>
                 </div>
             </div>
 
-            <div class="recent-activity">
-                <h3 class="chart-title">📋 Atividade Recente</h3>
-                <div id="recent-activities">
-                    <div class="activity-item">
-                        <div class="activity-time">Hoje, 14:30</div>
-                        <div class="activity-text">Sistema iniciado com sucesso</div>
+            <!-- Grid de Gráficos e Painéis -->
+            <div class="dash-charts-grid">
+                <!-- Gráfico: Horas por Obra -->
+                <div class="dash-chart-card dash-chart-large">
+                    <h3 class="chart-title">📊 HORAS POR OBRA (últimos 30 dias)</h3>
+                    <div id="chart-horas-obra" class="chart-bars-horizontal">
+                        <!-- Barras horizontais serão inseridas aqui -->
                     </div>
                 </div>
+
+                <!-- Painel: Top Funcionários -->
+                <div class="dash-chart-card dash-chart-small">
+                    <h3 class="chart-title">🏆 TOP FUNCIONÁRIOS (este mês)</h3>
+                    <div id="top-funcionarios-list" class="top-funcionarios">
+                        <!-- Lista de top funcionários será inserida aqui -->
+                    </div>
+                    <button class="metric-link" style="margin-top: 1rem;" onclick="mostrarAba('funcionarios')">+ ver todos</button>
+                </div>
+
+                <!-- Cronograma Semanal -->
+                <div class="dash-chart-card dash-chart-large">
+                    <h3 class="chart-title">📅 CRONOGRAMA SEMANAL</h3>
+                    <div id="cronograma-semanal" class="cronograma-grid">
+                        <!-- Grid de 7 dias será inserido aqui -->
+                    </div>
+                    <div class="cronograma-stats" id="cronograma-stats">
+                        Média diária: <strong>0h</strong> | Pico: <strong>-</strong>
+                    </div>
+                </div>
+
+                <!-- Alertas e Pendências -->
+                <div class="dash-chart-card dash-chart-small">
+                    <h3 class="chart-title">🚨 ALERTAS E PENDÊNCIAS</h3>
+                    <div id="alertas-list" class="alertas-container">
+                        <!-- Alertas serão inseridos aqui -->
+                    </div>
+                    <button class="metric-link" style="margin-top: 1rem;" onclick="verTodosAlertas()">+ ver todos alertas</button>
+                </div>
+            </div>
+
+            <!-- Atividade Recente -->
+            <div class="dash-activity-section">
+                <h3 class="chart-title">📋 ATIVIDADE RECENTE (últimos 10 lançamentos)</h3>
+                <div class="activity-filters">
+                    <button class="filter-pill active" data-filter="hoje">Hoje</button>
+                    <button class="filter-pill" data-filter="semana">Esta semana</button>
+                    <button class="filter-pill" data-filter="mes">Este mês</button>
+                    <button class="filter-pill" data-filter="todas">Todas</button>
+                </div>
+                <div id="atividade-recente" class="activity-list">
+                    <!-- Atividades serão inseridas aqui -->
+                </div>
+                <button class="load-more-btn" id="load-more-activities" onclick="carregarMaisAtividades()">
+                    Carregar mais 10 atividades ↓
+                </button>
             </div>
         </div>
 
@@ -170,10 +271,12 @@
                     </div>
                     <div class="form-group">
                         <label for="lancamento-funcao">Função</label>
-                        <input type="text" id="lancamento-funcao" readonly>
+                        <select id="lancamento-funcao" required>
+                            <option value="">Selecione...</option>
+                        </select>
                     </div>
                 </div>
-                
+
                 <div class="form-row">
                     <div class="form-group">
                         <label for="lancamento-empresa">Empresa</label>
@@ -190,25 +293,78 @@
                         <input type="time" id="lancamento-horas" value="08:00">
                     </div>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="lancamento-observacao">Observação</label>
                     <textarea id="lancamento-observacao" rows="2" placeholder="Observações opcionais..."></textarea>
                 </div>
-                
+
                 <button type="submit" class="btn btn-success">➕ Adicionar Lançamento</button>
             </form>
+
+            <!-- Controles de Filtros e Paginação -->
+            <div class="lancamentos-controls">
+                <div class="lanc-toolbar">
+                    <button id="toggle-filtros" class="btn-icon" title="Filtros">🔍 Filtros</button>
+                    <div class="spacer"></div>
+                    <label class="page-size-label" for="tabela-lancamentos-page-size">Exibir:</label>
+                    <select id="tabela-lancamentos-page-size" class="ctrl-select mini">
+                        <option value="25">25 por página</option>
+                        <option value="50" selected>50 por página</option>
+                        <option value="100">100 por página</option>
+                        <option value="200">200 por página</option>
+                        <option value="500">500 por página</option>
+                    </select>
+                    <div id="lanc-paginacao" class="pagination-container compact"></div>
+                </div>
+                <div id="lanc-filtros-panel" class="filters-panel collapsed">
+                    <div class="filters-row">
+                        <div class="filter-item">
+                            <span class="filter-label">Data inicial</span>
+                            <input type="date" id="lanc-data-inicio" class="ctrl-input" />
+                        </div>
+                        <div class="filter-item">
+                            <span class="filter-label">Data final</span>
+                            <input type="date" id="lanc-data-fim" class="ctrl-input" />
+                        </div>
+                        <div class="filter-item">
+                            <span class="filter-label">Funcionário</span>
+                            <select id="lanc-filtro-funcionario" class="ctrl-select">
+                                <option value="">Todos os funcionários</option>
+                            </select>
+                        </div>
+                        <div class="filter-item">
+                            <span class="filter-label">Função</span>
+                            <select id="lanc-filtro-funcao" class="ctrl-select">
+                                <option value="">Todas as funções</option>
+                            </select>
+                        </div>
+                        <div class="filter-item">
+                            <span class="filter-label">Empresa</span>
+                            <select id="lanc-filtro-empresa" class="ctrl-select">
+                                <option value="">Todas as empresas</option>
+                            </select>
+                        </div>
+                        <div class="filter-item">
+                            <span class="filter-label">Obra</span>
+                            <select id="lanc-filtro-obra" class="ctrl-select">
+                                <option value="">Todas as obras</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <div class="table-container">
                 <table>
                     <thead>
                         <tr>
-                            <th>Data</th>
-                            <th>Funcionário</th>
-                            <th>Função</th>
-                            <th>Empresa</th>
-                            <th>Obra</th>
-                            <th>Horas</th>
+                            <th id="th-data" class="sortable">Data</th>
+                            <th id="th-funcionario" class="sortable">Funcionário</th>
+                            <th id="th-funcao" class="sortable">Função</th>
+                            <th id="th-empresa" class="sortable">Empresa</th>
+                            <th id="th-obra" class="sortable">Obra</th>
+                            <th id="th-horas" class="sortable">Horas</th>
                             <th>Observação</th>
                             <th>Ações</th>
                         </tr>
@@ -241,7 +397,9 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="edit-lancamento-funcao">Função</label>
-                                <input type="text" id="edit-lancamento-funcao">
+                                <select id="edit-lancamento-funcao" required>
+                                    <option value="">Selecione...</option>
+                                </select>
                             </div>
                             <div class="form-group">
                                 <label for="edit-lancamento-empresa">Empresa</label>
@@ -540,6 +698,147 @@
                     </form>
                 </div>
             </div>
+
+            <!-- Modal: Nova/Editar Tarefa -->
+            <div id="modal-tarefa" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 class="modal-title">Nova Tarefa</h2>
+                        <button class="modal-close" onclick="fecharModal('modal-tarefa')">&times;</button>
+                    </div>
+                    <form id="form-tarefa">
+                        <div class="form-group">
+                            <label for="tarefa-titulo">Título *</label>
+                            <input type="text" id="tarefa-titulo" placeholder="Ex: Revisar projeto elétrico" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="tarefa-descricao">Descrição</label>
+                            <textarea id="tarefa-descricao" rows="3" placeholder="Descreva a tarefa..."></textarea>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="tarefa-status">Status *</label>
+                                <select id="tarefa-status" required>
+                                    <option value="novo">🆕 Novo</option>
+                                    <option value="em_andamento">⚙️ Em Andamento</option>
+                                    <option value="concluido">✅ Concluído</option>
+                                    <option value="cancelado">❌ Cancelado</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="tarefa-prioridade">Prioridade *</label>
+                                <select id="tarefa-prioridade" required>
+                                    <option value="baixa">🟢 Baixa</option>
+                                    <option value="media" selected>🟡 Média</option>
+                                    <option value="alta">🟠 Alta</option>
+                                    <option value="urgente">🔴 Urgente</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="tarefa-funcionario">Atribuir para (Funcionário) *</label>
+                            <select id="tarefa-funcionario" required>
+                                <option value="">Selecione um funcionário...</option>
+                            </select>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="tarefa-obra">Vincular à Obra (Opcional)</label>
+                                <select id="tarefa-obra">
+                                    <option value="">Nenhuma obra</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="tarefa-empresa">Vincular à Empresa (Opcional)</label>
+                                <select id="tarefa-empresa">
+                                    <option value="">Nenhuma empresa</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="tarefa-prazo">Data de Vencimento</label>
+                            <input type="date" id="tarefa-prazo">
+                        </div>
+
+                        <div class="modal-actions">
+                            <button type="submit" class="btn btn-primary">💾 Salvar Tarefa</button>
+                            <button type="button" class="btn btn-secondary" onclick="fecharModal('modal-tarefa')">❌ Cancelar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Modal: Detalhes da Tarefa -->
+            <div id="modal-detalhe-tarefa" class="modal">
+                <div class="modal-content modal-large">
+                    <div class="modal-header">
+                        <h2 id="detalhe-tarefa-titulo" class="modal-title"></h2>
+                        <button class="modal-close" onclick="fecharModal('modal-detalhe-tarefa')">&times;</button>
+                    </div>
+
+                    <div class="modal-body">
+                        <div class="tarefa-detalhes">
+                            <div class="tarefa-meta-group">
+                                <div class="tarefa-meta-item">
+                                    <strong>Status:</strong>
+                                    <span id="detalhe-tarefa-status"></span>
+                                </div>
+                                <div class="tarefa-meta-item">
+                                    <strong>Prioridade:</strong>
+                                    <span id="detalhe-tarefa-prioridade"></span>
+                                </div>
+                            </div>
+
+                            <div class="tarefa-descricao-box">
+                                <strong>Descrição:</strong>
+                                <p id="detalhe-tarefa-descricao"></p>
+                            </div>
+
+                            <div class="tarefa-info-grid">
+                                <div class="info-item">
+                                    <strong>👤 Responsável:</strong>
+                                    <span id="detalhe-tarefa-funcionario"></span>
+                                </div>
+                                <div class="info-item">
+                                    <strong>🏗️ Obra:</strong>
+                                    <span id="detalhe-tarefa-obra"></span>
+                                </div>
+                                <div class="info-item">
+                                    <strong>🏛️ Empresa:</strong>
+                                    <span id="detalhe-tarefa-empresa"></span>
+                                </div>
+                                <div class="info-item">
+                                    <strong>⏰ Prazo:</strong>
+                                    <span id="detalhe-tarefa-prazo"></span>
+                                </div>
+                                <div class="info-item">
+                                    <strong>📅 Criada em:</strong>
+                                    <span id="detalhe-tarefa-criado-em"></span>
+                                </div>
+                            </div>
+
+                            <!-- Comentários -->
+                            <div class="tarefa-comentarios-section">
+                                <h3 style="margin: 20px 0 10px 0; font-size: 18px;">💬 Comentários</h3>
+                                <div id="tarefa-comentarios"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button id="btn-editar-tarefa" class="btn btn-primary">✏️ Editar</button>
+                        <button id="btn-excluir-tarefa" class="btn btn-danger">🗑️ Excluir</button>
+                        <button type="button" class="btn btn-secondary" onclick="fecharModal('modal-detalhe-tarefa')">Fechar</button>
+                    </div>
+                </div>
+            </div>
         </div>
 
 
@@ -566,6 +865,25 @@
                     <tbody id="tabela-base"></tbody>
                 </table>
             </div>
+        </div>
+
+        <!-- Aba Tarefas (Kanban) -->
+        <div id="tarefas" class="tab-content">
+            <div class="page-header">
+                <h2 class="section-title">📋 Tarefas e Agenda</h2>
+                <button id="btn-nova-tarefa" class="btn btn-primary">➕ Nova Tarefa</button>
+            </div>
+
+            <!-- Contador de resultados -->
+            <div style="margin: 15px 0; text-align: center; color: #666;">
+                <span id="tarefas-contador">0 tarefas</span>
+            </div>
+
+            <!-- Painel de Filtros -->
+            <div id="tarefas-filtros"></div>
+
+            <!-- Kanban Board -->
+            <div id="kanban-board"></div>
         </div>
 
         <!-- Aba Relatórios -->
@@ -761,6 +1079,7 @@
                     </table>
                 </div>
             </div>
+            </div>
         </div>
 
         <!-- Aba Projetos -->
@@ -834,178 +1153,275 @@
         </div>
 
         <!-- Aba Usuários -->
+        <!-- Aba Usuários (Sistema de Autenticação) -->
         <div id="usuarios" class="tab-content">
-            <h2 class="section-title">👤 Gerenciamento de Usuários</h2>
-            
-            <!-- Sistema de Login/Cadastro -->
-            <div id="auth-section" class="auth-container">
-                <div class="auth-tabs">
-                    <button class="auth-tab active" onclick="showAuthTab('login')">🔑 Login</button>
-                    <button class="auth-tab" onclick="showAuthTab('cadastro')">📝 Cadastrar</button>
-                </div>
+            <h2>👤 Gerenciamento de Usuários</h2>
 
-                <!-- Formulário de Login -->
-                <div id="login-form" class="auth-form active">
-                    <h3>Entrar no Sistema</h3>
-                    <form onsubmit="fazerLogin(event)">
-                        <div class="form-group">
-                            <label for="login-email">E-mail</label>
-                            <input type="email" id="login-email" required placeholder="seu@email.com">
-                        </div>
-                        <div class="form-group">
-                            <label for="login-senha">Senha</label>
-                            <input type="password" id="login-senha" required placeholder="Sua senha">
-                        </div>
-                        <div class="form-group">
-                            <label>
-                                <input type="checkbox" id="login-lembrar"> Lembrar de mim
-                            </label>
-                        </div>
-                        <button type="submit" class="btn btn-primary btn-full">🔑 Entrar</button>
-                    </form>
-                    <p class="auth-link">Não tem conta? <a href="#" onclick="showAuthTab('cadastro')">Cadastre-se aqui</a></p>
-                </div>
+            <!-- Tabs secundárias -->
+            <div class="tabs-secondary">
+                <button class="tab-btn active" onclick="showSubTab('usuarios-lista')">
+                    📋 Lista de Usuários
+                </button>
+                <button class="tab-btn" onclick="showSubTab('usuarios-adicionar')">
+                    ➕ Adicionar Usuário
+                </button>
+            </div>
 
-                <!-- Formulário de Cadastro -->
-                <div id="cadastro-form" class="auth-form">
-                    <h3>Criar Nova Conta</h3>
-                    <form onsubmit="fazerCadastro(event)">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="cadastro-nome">Nome Completo</label>
-                                <input type="text" id="cadastro-nome" required placeholder="Seu nome completo">
-                            </div>
-                            <div class="form-group">
-                                <label for="cadastro-empresa">Empresa</label>
-                                <input type="text" id="cadastro-empresa" required placeholder="Nome da sua empresa">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="cadastro-email">E-mail</label>
-                            <input type="email" id="cadastro-email" required placeholder="seu@email.com">
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="cadastro-senha">Senha</label>
-                                <input type="password" id="cadastro-senha" required placeholder="Mínimo 6 caracteres">
-                            </div>
-                            <div class="form-group">
-                                <label for="cadastro-confirma">Confirmar Senha</label>
-                                <input type="password" id="cadastro-confirma" required placeholder="Confirme a senha">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="cadastro-cargo">Cargo/Função</label>
-                            <select id="cadastro-cargo" required>
-                                <option value="">Selecione...</option>
-                                <option value="administrador">Administrador</option>
-                                <option value="gerente">Gerente de Obras</option>
-                                <option value="encarregado">Encarregado</option>
-                                <option value="supervisor">Supervisor</option>
-                                <option value="outros">Outros</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>
-                                <input type="checkbox" id="cadastro-termos" required> 
-                                Aceito os <a href="#" onclick="mostrarTermos()">termos de uso</a>
-                            </label>
-                        </div>
-                        <button type="submit" class="btn btn-success btn-full">📝 Criar Conta</button>
-                    </form>
-                    <p class="auth-link">Já tem conta? <a href="#" onclick="showAuthTab('login')">Faça login aqui</a></p>
+            <!-- Sub-tab: Lista -->
+            <div id="usuarios-lista" class="sub-tab-content active">
+                <div class="card">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Email</th>
+                                    <th>Usuário</th>
+                                    <th>Tipo</th>
+                                    <th>Status</th>
+                                    <th>Último Login</th>
+                                    <th class="th-acoes">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usuarios-tbody">
+                                <tr>
+                                    <td colspan="7" style="text-align: center; padding: 2rem;">
+                                        Carregando usuários...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
-            <!-- Área do Usuário Logado -->
-            <div id="user-area" class="user-area" style="display: none;">
-                <div class="user-welcome">
-                    <div class="user-avatar">👤</div>
-                    <div class="user-info">
-                        <h3 id="user-nome">Nome do Usuário</h3>
-                        <p id="user-empresa">Empresa</p>
-                        <p id="user-cargo">Cargo</p>
-                        <small>Último acesso: <span id="user-ultimo-acesso">Agora</span></small>
-                    </div>
-                    <button class="btn btn-danger" onclick="fazerLogout()">🚪 Sair</button>
-                </div>
+            <!-- Sub-tab: Adicionar -->
+            <div id="usuarios-adicionar" class="sub-tab-content">
+                <div class="card">
+                    <h3>➕ Adicionar Novo Usuário</h3>
 
-                <div class="config-grid">
-                    <div class="config-section">
-                        <h3>👤 Editar Perfil</h3>
-                        <form id="form-perfil">
+                    <form id="form-add-usuario">
+                        <div class="form-row">
                             <div class="form-group">
-                                <label for="perfil-nome">Nome</label>
-                                <input type="text" id="perfil-nome">
+                                <label for="add-nome">Nome Completo *</label>
+                                <input type="text" id="add-nome" name="nome" required placeholder="Ex: João da Silva" />
                             </div>
+
                             <div class="form-group">
-                                <label for="perfil-empresa">Empresa</label>
-                                <input type="text" id="perfil-empresa">
+                                <label for="add-email">Email *</label>
+                                <input type="email" id="add-email" name="email" required placeholder="Ex: joao@empresa.com" />
                             </div>
+                        </div>
+
+                        <div class="form-row">
                             <div class="form-group">
-                                <label for="perfil-cargo">Cargo</label>
-                                <select id="perfil-cargo">
-                                    <option value="administrador">Administrador</option>
-                                    <option value="gerente">Gerente de Obras</option>
-                                    <option value="encarregado">Encarregado</option>
-                                    <option value="supervisor">Supervisor</option>
-                                    <option value="outros">Outros</option>
+                                <label for="add-usuario">Usuário (Login) *</label>
+                                <input type="text" id="add-usuario" name="usuario" required placeholder="Ex: joao.silva" />
+                            </div>
+
+                            <div class="form-group">
+                                <label for="add-senha">Senha *</label>
+                                <input type="password" id="add-senha" name="senha" required placeholder="Mínimo 6 caracteres" minlength="6" />
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="add-tipo">Tipo de Usuário *</label>
+                                <select id="add-tipo" name="tipo" required>
+                                    <option value="usuario">👤 Usuário</option>
+                                    <option value="admin">👑 Administrador</option>
                                 </select>
                             </div>
-                            <button type="button" class="btn btn-primary" onclick="atualizarPerfil()">💾 Salvar</button>
-                        </form>
+
+                            <div class="form-group">
+                                <label for="add-ativo">Status *</label>
+                                <select id="add-ativo" name="ativo" required>
+                                    <option value="Sim">✓ Ativo</option>
+                                    <option value="Não">✗ Inativo</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                💾 Criar Usuário
+                            </button>
+                            <button type="reset" class="btn btn-secondary">
+                                🔄 Limpar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de Edição de Usuário -->
+        <div id="modal-edit-usuario" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>✏️ Editar Usuário</h3>
+                    <button class="modal-close" onclick="closeModal('modal-edit-usuario')">×</button>
+                </div>
+
+                <form id="form-edit-usuario">
+                    <input type="hidden" id="edit-usuario-id" name="id" />
+
+                    <div class="form-group">
+                        <label for="edit-nome">Nome Completo *</label>
+                        <input type="text" id="edit-nome" name="nome" required />
                     </div>
 
-                    <div class="config-section">
-                        <h3>🔒 Alterar Senha</h3>
-                        <form id="form-senha">
-                            <div class="form-group">
-                                <label for="senha-atual">Senha Atual</label>
-                                <input type="password" id="senha-atual" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="senha-nova">Nova Senha</label>
-                                <input type="password" id="senha-nova" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="senha-confirma">Confirmar Nova Senha</label>
-                                <input type="password" id="senha-confirma" required>
-                            </div>
-                            <button type="button" class="btn btn-warning" onclick="alterarSenha()">🔒 Alterar</button>
-                        </form>
+                    <div class="form-group">
+                        <label for="edit-email">Email *</label>
+                        <input type="email" id="edit-email" name="email" required />
                     </div>
 
-                    <div class="config-section">
-                        <h3>📊 Estatísticas do Usuário</h3>
-                        <div class="user-stats">
-                            <div class="stat-item">
-                                <span class="stat-number" id="stat-dias-cadastro">0</span>
-                                <span class="stat-label">Dias cadastrado</span>
-                            </div>
-                            <div class="stat-item">
-                                <span class="stat-number" id="stat-total-lancamentos">0</span>
-                                <span class="stat-label">Lançamentos feitos</span>
-                            </div>
-                            <div class="stat-item">
-                                <span class="stat-number" id="stat-avaliacoes-feitas">0</span>
-                                <span class="stat-label">Avaliações realizadas</span>
-                            </div>
-                            <div class="stat-item">
-                                <span class="stat-number" id="stat-ultimo-backup">Nunca</span>
-                                <span class="stat-label">Último backup</span>
-                            </div>
+                    <div class="form-group">
+                        <label for="edit-usuario">Usuário (Login) *</label>
+                        <input type="text" id="edit-usuario" name="usuario" required />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-senha">Nova Senha (deixe em branco para manter)</label>
+                        <input type="password" id="edit-senha" name="senha" placeholder="Mínimo 6 caracteres" minlength="6" />
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="edit-tipo">Tipo de Usuário *</label>
+                            <select id="edit-tipo" name="tipo" required>
+                                <option value="usuario">👤 Usuário</option>
+                                <option value="admin">👑 Administrador</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="edit-ativo">Status *</label>
+                            <select id="edit-ativo" name="ativo" required>
+                                <option value="Sim">✓ Ativo</option>
+                                <option value="Não">✗ Inativo</option>
+                            </select>
                         </div>
                     </div>
 
-                    <div class="config-section">
-                        <h3>⚠️ Zona de Perigo</h3>
-                        <p>Ações irreversíveis que afetam sua conta.</p>
-                        <div style="margin-top: 1rem;">
-                            <button class="btn btn-danger" onclick="excluirConta()" style="margin-bottom: 0.5rem;">
-                                🗑️ Excluir Conta
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            💾 Salvar Alterações
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-edit-usuario')">
+                            ❌ Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Aba Permissões -->
+        <div id="permissoes" class="tab-content">
+            <div class="permissoes-layout">
+                <!-- Coluna Esquerda: Usuários -->
+                <div class="permissoes-usuarios-panel">
+                    <div class="panel-header">
+                        <h2>
+                            <span class="icon">👤</span>
+                            Gerenciar Usuários
+                        </h2>
+                        <button class="btn btn-primary" onclick="abrirModalNovoUsuario()">
+                            <span>➕</span> Novo Usuário
+                        </button>
+                    </div>
+
+                    <div class="search-box">
+                        <input type="text"
+                               id="buscar-usuario"
+                               class="form-control"
+                               placeholder="🔍 Buscar por nome ou username...">
+                    </div>
+
+                    <div id="lista-usuarios" class="usuarios-grid">
+                        <!-- Cards de usuários renderizados dinamicamente -->
+                    </div>
+                </div>
+
+                <!-- Coluna Direita: Permissões -->
+                <div class="permissoes-controle-panel">
+                    <div class="panel-header">
+                        <h2>
+                            <span class="icon">🔐</span>
+                            Permissões de Acesso
+                        </h2>
+                    </div>
+
+                    <div id="permissoes-content">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🔐</div>
+                            <h3>Selecione um usuário</h3>
+                            <p>Escolha um usuário na lista ao lado para gerenciar suas permissões de acesso aos módulos do sistema.</p>
+                        </div>
+                    </div>
+
+                    <!-- Painel de Permissões (renderizado dinamicamente) -->
+                    <div id="permissoes-matrix" class="permissoes-matrix" style="display: none;">
+                        <!-- Header com informações do usuário -->
+                        <div class="usuario-selecionado-info">
+                            <div class="avatar">JS</div>
+                            <div class="info">
+                                <h3 id="perm-usuario-nome">Nome do Usuário</h3>
+                                <p id="perm-usuario-username">@username</p>
+                            </div>
+                        </div>
+
+                        <!-- Ações rápidas -->
+                        <div class="acoes-rapidas">
+                            <button class="btn btn-sm btn-success" onclick="concederAcessoTotal()">
+                                ☑️ Conceder Acesso Total
                             </button>
-                            <br>
-                            <small style="color: #666;">Esta ação não pode ser desfeita!</small>
+                            <button class="btn btn-sm btn-danger" onclick="revogarAcessoTotal()">
+                                ☐ Revogar Acesso Total
+                            </button>
+                        </div>
+
+                        <!-- Tabela de Permissões -->
+                        <div class="table-container">
+                            <table class="table table-permissoes">
+                                <thead>
+                                    <tr>
+                                        <th>Módulo</th>
+                                        <th class="text-center">
+                                            👁️ Visualizar
+                                            <br>
+                                            <input type="checkbox" onclick="toggleColuna('visualizar', this.checked)">
+                                        </th>
+                                        <th class="text-center">
+                                            ➕ Criar
+                                            <br>
+                                            <input type="checkbox" onclick="toggleColuna('criar', this.checked)">
+                                        </th>
+                                        <th class="text-center">
+                                            ✏️ Editar
+                                            <br>
+                                            <input type="checkbox" onclick="toggleColuna('editar', this.checked)">
+                                        </th>
+                                        <th class="text-center">
+                                            🗑️ Excluir
+                                            <br>
+                                            <input type="checkbox" onclick="toggleColuna('excluir', this.checked)">
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody id="matriz-permissoes-body">
+                                    <!-- Linhas renderizadas dinamicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Botão Salvar -->
+                        <div class="permissoes-footer">
+                            <button class="btn btn-primary btn-lg" onclick="salvarPermissoes()">
+                                💾 Salvar Permissões
+                            </button>
+                            <span class="save-status" id="save-status"></span>
                         </div>
                     </div>
                 </div>
@@ -1208,8 +1624,204 @@
         <p>Carregando...</p>
     </div>
 
+    <!-- ========================================
+         MODAL DE LOGIN
+         ======================================== -->
+    <div id="modal-login" class="modal">
+        <div class="modal-content modal-login">
+            <div class="login-header">
+                <div class="login-logo">
+                    <img src="assets/logo.png" alt="Logo" style="max-width: 150px; margin-bottom: 20px;" onerror="this.style.display='none'">
+                </div>
+                <h2>🏗️ Controle de Obras</h2>
+                <p class="login-subtitle">Construtora Ramdy Raydan</p>
+            </div>
+
+            <form id="form-login" class="login-form">
+                <div class="form-group">
+                    <label for="login-usuario">
+                        👤 Usuário ou Email
+                    </label>
+                    <input
+                        type="text"
+                        id="login-usuario"
+                        name="usuario"
+                        required
+                        autofocus
+                        placeholder="Digite seu usuário ou email"
+                        autocomplete="username"
+                    />
+                </div>
+
+                <div class="form-group">
+                    <label for="login-senha">
+                        🔒 Senha
+                    </label>
+                    <input
+                        type="password"
+                        id="login-senha"
+                        name="senha"
+                        required
+                        placeholder="Digite sua senha"
+                        autocomplete="current-password"
+                    />
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-full btn-login">
+                    🔑 Entrar
+                </button>
+            </form>
+
+            <div class="login-footer">
+                <p class="text-muted">
+                    Sistema de Gestão de Obras
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script de login (usar type="module" para importar) -->
+    <script type="module">
+        import { login } from './js/modules/auth.js';
+        import { showNotification, showLoading, hideLoading } from './js/modules/ui.js';
+
+        const form = document.getElementById('form-login');
+        if (form) {
+            form.addEventListener('submit', async function(event) {
+                event.preventDefault();
+
+                const usuario = document.getElementById('login-usuario').value;
+                const senha = document.getElementById('login-senha').value;
+
+                try {
+                    showLoading('Autenticando...');
+
+                    const result = await login(usuario, senha);
+
+                    if (result.sucesso) {
+                        showNotification('Login realizado com sucesso!', 'success');
+                        // Recarregar página para inicializar app autenticado
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 500);
+                    } else {
+                        showNotification(result.mensagem || 'Erro ao fazer login', 'error');
+                    }
+                } catch (error) {
+                    console.error('Erro ao fazer login:', error);
+                    showNotification('Erro ao fazer login. Verifique suas credenciais.', 'error');
+                } finally {
+                    hideLoading();
+                }
+            });
+        }
+    </script>
+
+    <!-- Script para alternar sub-tabs -->
+    <script>
+        function showSubTab(tabId) {
+            // Remover active de todos os botões e conteúdos
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.sub-tab-content').forEach(content => content.classList.remove('active'));
+
+            // Adicionar active no botão clicado
+            event.target.classList.add('active');
+
+            // Mostrar conteúdo correspondente
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+    </script>
+
+    <!-- Modal: Novo/Editar Usuário -->
+    <div id="modal-usuario" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-usuario-titulo">Novo Usuário</h2>
+                <span class="fechar" onclick="fecharModalUsuario()">&times;</span>
+            </div>
+            <form id="form-usuario" onsubmit="salvarUsuario(event)">
+                <input type="hidden" id="usuario-id">
+
+                <div class="form-group">
+                    <label for="usuario-nome">Nome Completo *</label>
+                    <input type="text"
+                           id="usuario-nome"
+                           class="form-control"
+                           required
+                           placeholder="Ex: João da Silva">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="usuario-username">Username *</label>
+                        <input type="text"
+                               id="usuario-username"
+                               class="form-control"
+                               required
+                               placeholder="Ex: joao.silva">
+                        <small>Usado para login (sem espaços)</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="usuario-email">Email</label>
+                        <input type="email"
+                               id="usuario-email"
+                               class="form-control"
+                               placeholder="joao@example.com">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="usuario-senha">Senha *</label>
+                        <input type="password"
+                               id="usuario-senha"
+                               class="form-control"
+                               placeholder="Mínimo 6 caracteres">
+                        <small id="senha-hint">Deixe em branco para manter a senha atual (ao editar)</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="usuario-tipo">Tipo de Usuário *</label>
+                        <select id="usuario-tipo" class="form-control" required>
+                            <option value="usuario">Usuário</option>
+                            <option value="admin">Administrador</option>
+                        </select>
+                        <small>Administradores têm acesso total</small>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="usuario-ativo">Status</label>
+                    <select id="usuario-ativo" class="form-control">
+                        <option value="Sim">Ativo</option>
+                        <option value="Não">Inativo</option>
+                    </select>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="fecharModalUsuario()">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        💾 Salvar Usuário
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- SheetJS para exportação Excel -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
-    <script src="script.js?v=4.4"></script>
+
+    <!-- ARQUITETURA MODULAR ES6 ATIVADA -->
+    <script type="module" src="js/app.js"></script>
+
+    <!-- Script.js - Versão funcional monolítica (DESATIVADO) -->
+    <!-- <script src="script.js"></script> -->
 </body>
 </html>

@@ -1,23 +1,29 @@
 <?php
 require_once __DIR__ . '/config.php';
 
+// Middleware de autenticação
+requer_autenticacao();
+
 // Determinar ação baseada no método HTTP
 $metodo = $_SERVER['REQUEST_METHOD'];
 
 switch ($metodo) {
     case 'GET':
+        requer_permissao('funcionarios', 'visualizar');
+
         // Listar todos os funcionários
         try {
             $stmt = $pdo->query("SELECT * FROM funcionarios ORDER BY nome ASC");
             $funcionarios = $stmt->fetchAll();
             resposta_json(true, $funcionarios);
-            
+
         } catch (PDOException $e) {
             resposta_json(false, null, 'Erro ao buscar funcionários: ' . $e->getMessage());
         }
         break;
-    
+
     case 'POST':
+        requer_permissao('funcionarios', 'criar');
         // Adicionar novo funcionário
         $dados = obter_dados_post();
         
@@ -54,6 +60,8 @@ switch ($metodo) {
         break;
     
     case 'DELETE':
+        requer_permissao('funcionarios', 'excluir');
+
         // Excluir funcionário
         $id = $_GET['id'] ?? null;
         
@@ -90,8 +98,9 @@ switch ($metodo) {
             resposta_json(false, null, 'Erro ao excluir funcionário: ' . $e->getMessage());
         }
         break;
-    
+
     case 'PUT':
+        requer_permissao('funcionarios', 'editar');
         // Atualizar funcionário
         $id = $_GET['id'] ?? null;
         

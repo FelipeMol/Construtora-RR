@@ -22,6 +22,67 @@ export function formatarDataInput(data) {
 }
 
 /**
+ * Converte objeto Date para string YYYY-MM-DD
+ */
+export function formatDateToYYYYMMDD(date) {
+    if (!date) return '';
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+/**
+ * Formata data para exibição (DD/MM/YYYY)
+ * Aceita: Date object, YYYY-MM-DD string, ou timestamp
+ */
+export function formatDate(data) {
+    if (!data) return '';
+
+    let dateObj;
+
+    // Se é string no formato YYYY-MM-DD ou YYYY-MM-DD HH:MM:SS
+    if (typeof data === 'string') {
+        // Extrair apenas a parte da data se tiver timestamp
+        const datePart = data.split(' ')[0];
+        const [year, month, day] = datePart.split('-');
+        return `${day}/${month}/${year}`;
+    }
+
+    // Se é objeto Date
+    if (data instanceof Date) {
+        const day = String(data.getDate()).padStart(2, '0');
+        const month = String(data.getMonth() + 1).padStart(2, '0');
+        const year = data.getFullYear();
+        return `${day}/${month}/${year}`;
+    }
+
+    return '';
+}
+
+/**
+ * Formata data para exibição BR (ambas direções)
+ * Se receber YYYY-MM-DD, converte para DD/MM/YYYY
+ * Se receber DD/MM/YYYY, retorna sem alteração
+ */
+export function formatarDataBR(dataStr) {
+    if (!dataStr) return '';
+
+    // Se já está em DD/MM/YYYY
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(dataStr)) {
+        return dataStr;
+    }
+
+    // Se está em YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dataStr)) {
+        const [ano, mes, dia] = dataStr.split('-');
+        return `${dia}/${mes}/${ano}`;
+    }
+
+    return dataStr;
+}
+
+/**
  * Retorna data de hoje no formato YYYY-MM-DD
  */
 export function getDataHoje() {
@@ -259,7 +320,10 @@ export function validarFormulario(formData, regras) {
  */
 export function salvarLocal(chave, valor) {
     try {
-        localStorage.setItem(chave, JSON.stringify(valor));
+        // Se for string, salvar diretamente sem stringify
+        // Se for objeto/array, usar stringify
+        const valorParaSalvar = typeof valor === 'string' ? valor : JSON.stringify(valor);
+        localStorage.setItem(chave, valorParaSalvar);
         return true;
     } catch (error) {
         console.error('Erro ao salvar no localStorage:', error);
@@ -273,7 +337,14 @@ export function salvarLocal(chave, valor) {
 export function carregarLocal(chave, valorPadrao = null) {
     try {
         const item = localStorage.getItem(chave);
-        return item ? JSON.parse(item) : valorPadrao;
+        if (!item) return valorPadrao;
+
+        // Tentar fazer parse, se falhar retornar o valor direto (é uma string)
+        try {
+            return JSON.parse(item);
+        } catch {
+            return item;
+        }
     } catch (error) {
         console.error('Erro ao carregar do localStorage:', error);
         return valorPadrao;
@@ -291,4 +362,20 @@ export function removerLocal(chave) {
         console.error('Erro ao remover do localStorage:', error);
         return false;
     }
+}
+
+/**
+ * Gera avatar com iniciais do nome
+ * @param {string} nome - Nome completo do usuário
+ * @returns {string} - Iniciais (2 letras maiúsculas)
+ */
+export function gerarAvatar(nome) {
+    if (!nome) return '?';
+
+    const palavras = nome.trim().split(' ');
+    if (palavras.length === 1) {
+        return palavras[0].substring(0, 2).toUpperCase();
+    }
+
+    return (palavras[0][0] + palavras[palavras.length - 1][0]).toUpperCase();
 }

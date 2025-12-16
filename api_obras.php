@@ -1,11 +1,16 @@
 <?php
 require_once __DIR__ . '/config.php';
 
+// Middleware de autenticação
+requer_autenticacao();
+
 // Determinar ação baseada no método HTTP
 $metodo = $_SERVER['REQUEST_METHOD'];
 
 switch ($metodo) {
     case 'GET':
+        requer_permissao('obras', 'visualizar');
+
         // Listar todas as obras
         try {
             $stmt = $pdo->query("SELECT * FROM obras ORDER BY nome ASC");
@@ -18,6 +23,8 @@ switch ($metodo) {
         break;
     
     case 'POST':
+        requer_permissao('obras', 'criar');
+
         // Adicionar nova obra
         $dados = obter_dados_post();
         
@@ -51,8 +58,9 @@ switch ($metodo) {
             resposta_json(false, null, 'Erro ao salvar obra: ' . $e->getMessage());
         }
         break;
-    
+
     case 'PUT':
+        requer_permissao('obras', 'editar');
         $id = $_GET['id'] ?? null;
         
         if (!$id) {
@@ -105,8 +113,9 @@ switch ($metodo) {
             resposta_json(false, null, 'Erro ao atualizar obra: ' . $e->getMessage());
         }
         break;
-    
+
     case 'DELETE':
+        requer_permissao('obras', 'excluir');
         // Excluir obra
         $id = $_GET['id'] ?? null;
         

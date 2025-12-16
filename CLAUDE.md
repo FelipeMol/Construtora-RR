@@ -394,3 +394,5 @@ AppStore.debug();          // Debug do store
 - Color scheme: Primary blue `#2563eb`, success green `#10b981`, error red `#ef4444`
 - Use existing utility classes: `.btn-primary`, `.btn-success`, `.btn-danger`, `.card`, `.modal`, etc.
 - Responsive breakpoints in [styles.css](styles.css): 768px (tablets), 480px (mobile)
+
+TENTAR NÃO USAR O SCRIPT.JS, TENTAR SEMPRE FAZER EM MODULOS DE JS
