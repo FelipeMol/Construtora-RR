@@ -72,6 +72,24 @@
     .stat-card { box-shadow: none !important; }
     .mini-bar { display: inline-block; width: 6px; margin-right: 2px; background: #1976d2; }
 }
+
+/* ===== Ajustes específicos da aba Lançamentos ===== */
+#lancamentos .form-row {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+}
+
+#lancamentos input,
+#lancamentos select,
+#lancamentos textarea {
+    padding: 0.65rem 0.8rem;
+    border-radius: 12px;
+}
+
+#lancamentos .btn {
+    border-radius: 12px;
+    padding: 0.8rem 1.4rem;
+}
 /* Controle de Obras - Sistema com Sidebar Retrátil */
 
 * {

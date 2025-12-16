@@ -314,11 +314,32 @@ function popularDropdownsFormulario() {
         // Auto-preencher função e empresa ao selecionar funcionário
         selectFunc.addEventListener('change', function() {
             const selectedOption = this.options[this.selectedIndex];
-            const funcaoInput = document.getElementById('lancamento-funcao');
+            const funcaoEl = document.getElementById('lancamento-funcao');
             const empresaInput = document.getElementById('lancamento-empresa');
 
-            if (funcaoInput) funcaoInput.value = selectedOption.dataset.funcao || '';
-            if (empresaInput) empresaInput.value = selectedOption.dataset.empresa || '';
+            const funcao = selectedOption?.dataset.funcao || '';
+            const empresa = selectedOption?.dataset.empresa || '';
+
+            if (funcaoEl) {
+                if (funcaoEl.tagName === 'SELECT') {
+                    // Popular o SELECT com a função atual e selecionar
+                    funcaoEl.innerHTML = '<option value="">Selecione...</option>';
+                    if (funcao) {
+                        const opt = document.createElement('option');
+                        opt.value = funcao;
+                        opt.textContent = funcao;
+                        opt.selected = true;
+                        funcaoEl.appendChild(opt);
+                    }
+                    // Travar edição manual, pois a função vem do cadastro do funcionário
+                    funcaoEl.disabled = true;
+                } else {
+                    // Campo input/texto
+                    funcaoEl.value = funcao;
+                }
+            }
+
+            if (empresaInput) empresaInput.value = empresa;
         });
     }
 
