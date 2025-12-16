@@ -149,6 +149,8 @@ function atualizarContadorResultados(filtradas, total) {
  * Abrir formulário de nova tarefa
  */
 export function abrirFormularioNovaTarefa() {
+    console.log('🎯 Abrindo formulário de nova tarefa...');
+
     // Verificar permissão de criar tarefas
     if (!verificarEhAdmin() && !temPermissao('tarefas', 'criar')) {
         showNotification(MESSAGES.TAREFAS.ERROR.NO_PERMISSION, 'erro');
@@ -160,9 +162,11 @@ export function abrirFormularioNovaTarefa() {
     if (form) {
         form.reset();
         form.dataset.tarefaId = '';
+        console.log('✅ Formulário resetado');
     }
 
     // Preencher dropdowns
+    console.log('📋 Preenchendo dropdowns...');
     preencherDropdownUsuarios();
     preencherDropdownObras();
     preencherDropdownEmpresas();
@@ -176,9 +180,13 @@ export function abrirFormularioNovaTarefa() {
 
     // Atualizar título do modal
     const modalTitle = document.querySelector('#modal-tarefa .modal-title');
-    if (modalTitle) modalTitle.textContent = 'Nova Tarefa';
+    if (modalTitle) {
+        modalTitle.textContent = 'Nova Tarefa';
+        console.log('✅ Título do modal atualizado');
+    }
 
     // Abrir modal
+    console.log('🚀 Abrindo modal modal-tarefa...');
     abrirModal('modal-tarefa');
 }
 

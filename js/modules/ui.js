@@ -693,8 +693,16 @@ export function confirmar(mensagem, titulo = 'Confirmação') {
 export function abrirModalEdicao(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
-        modal.classList.add('active');
-        modal.style.display = 'flex';
+        // Suporte para modais antigos (.modal) e novos (.modal-backdrop)
+        if (modal.classList.contains('modal-backdrop')) {
+            modal.style.display = 'flex';
+            // Trigger reflow para animação funcionar
+            modal.offsetHeight;
+            modal.classList.add('show');
+        } else {
+            modal.classList.add('active');
+            modal.style.display = 'flex';
+        }
         console.log(`✅ Modal ${modalId} aberto`);
     }
 }
@@ -702,8 +710,17 @@ export function abrirModalEdicao(modalId) {
 export function fecharModalEdicao(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
-        modal.classList.remove('active');
-        modal.style.display = 'none';
+        // Suporte para modais antigos (.modal) e novos (.modal-backdrop)
+        if (modal.classList.contains('modal-backdrop')) {
+            modal.classList.remove('show');
+            // Aguardar animação antes de esconder
+            setTimeout(() => {
+                modal.style.display = 'none';
+            }, 300);
+        } else {
+            modal.classList.remove('active');
+            modal.style.display = 'none';
+        }
         console.log(`🚪 Modal ${modalId} fechado`);
     }
 }
@@ -723,7 +740,8 @@ export function configurarModaisEdicao() {
     const modais = [
         'modal-editar-empresa',
         'modal-editar-funcionario',
-        'modal-editar-obra'
+        'modal-editar-obra',
+        'modal-tarefa'  // Adicionar modal de tarefa
     ];
 
     // Adicionar event listener para fechar ao clicar no backdrop
