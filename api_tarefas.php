@@ -119,11 +119,10 @@ function listarTarefas($pdo, $usuario, $ehAdmin) {
     $where = [];
     $params = [];
 
-    // Non-admin: ver apenas tarefas onde é responsável direto, criador ou membro
+    // Non-admin: ver apenas tarefas onde é responsável ou membro
     if (!$ehAdmin) {
         $where[] = "(
             t.usuario_responsavel_id = :usuario_id
-            OR t.funcionario_id = :usuario_id
             OR EXISTS (SELECT 1 FROM tarefas_membros tm WHERE tm.tarefa_id = t.id AND tm.usuario_id = :usuario_id)
         )";
         $params[':usuario_id'] = $usuario['id'];
@@ -183,11 +182,16 @@ function listarTarefas($pdo, $usuario, $ehAdmin) {
         t.criado_em DESC
     ";
 
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute($params);
-    $tarefas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    try {
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        $tarefas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    resposta_json(true, $tarefas, 'Tarefas listadas com sucesso');
+        resposta_json(true, $tarefas, 'Tarefas listadas com sucesso');
+    } catch (PDOException $e) {
+        error_log('Erro ao listar tarefas: ' . $e->getMessage());
+        resposta_json(false, null, 'Erro ao listar tarefas: ' . $e->getMessage());
+    }
 }
 
 /**
