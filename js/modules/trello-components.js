@@ -456,58 +456,86 @@ export function ActivityItem({ atividade }) {
 /**
  * Seção de etiquetas
  */
-export function EtiquetasSection({ tarefaId, etiquetas = [], todasEtiquetas = [] }) {
+export function EtiquetasSection({ tarefaId, etiquetas = [], todasEtiquetas = [], cores = [] }) {
+    const palette = cores && cores.length ? cores : ['#61bd4f', '#f2d600', '#ff9f1a', '#eb5a46', '#c377e0', '#0079bf', '#00c2e0', '#51e898', '#ff78cb', '#344563'];
+    const associacoes = new Map(
+        (etiquetas || []).map(e => [Number(e.id), e.associacao_id || e.id_associacao || e.tarefa_etiqueta_id || null])
+    );
+
     return `
-        <div class="trello-section">
+        <div class="trello-section" id="trello-labels-panel">
             <div class="trello-section-header">
                 <h3 class="trello-section-title">
                     <span class="icon">🏷️</span>
                     <span>Etiquetas</span>
                 </h3>
-                <button class="trello-section-action" onclick="mostrarSeletorEtiquetas(${tarefaId})">
-                    + Adicionar
+                <button class="trello-section-action" onclick="abrirCriarEtiqueta()">
+                    + Nova
                 </button>
             </div>
 
-            <div class="etiquetas-container" id="etiquetas-container-${tarefaId}">
-                ${etiquetas.length > 0
-                    ? etiquetas.map(e => EtiquetaBadge({ tarefaId, etiqueta: e, removivel: true })).join('')
-                    : '<p class="text-muted" style="font-size: 14px;">Nenhuma etiqueta</p>'
+            <div class="trello-labels-search">
+                <input
+                    id="trello-label-search"
+                    type="text"
+                    class="form-input-new"
+                    placeholder="Buscar etiquetas..."
+                    oninput="filtrarEtiquetasTrello(this.value)"
+                >
+            </div>
+
+            <div class="trello-labels-list" id="trello-labels-list">
+                ${(todasEtiquetas || []).length > 0
+                    ? todasEtiquetas.map(e => EtiquetaRow({ tarefaId, etiqueta: e, marcado: associacoes.has(Number(e.id)), associacaoId: associacoes.get(Number(e.id)) || '' })).join('')
+                    : '<p class="text-muted" style="font-size: 14px;">Nenhuma etiqueta cadastrada</p>'
                 }
             </div>
 
-            <div id="selector-etiquetas-${tarefaId}" class="hidden" style="margin-top: 12px;">
-                <select id="select-etiqueta-${tarefaId}" class="form-select-new" style="margin-bottom: 8px;">
-                    <option value="">Selecione uma etiqueta...</option>
-                    ${todasEtiquetas.map(e => `
-                        <option value="${e.id}" style="background: ${e.cor}; color: white;">${e.nome}</option>
+            <div class="trello-labels-footer">
+                <button class="trello-sidebar-btn" onclick="abrirCriarEtiqueta()">Criar uma nova etiqueta</button>
+                <button class="trello-sidebar-btn" onclick="abrirCriarEtiqueta()">Editar etiqueta selecionada</button>
+            </div>
+
+            <div id="trello-label-editor" class="trello-label-editor hidden">
+                <label for="trello-label-nome">Nome da etiqueta</label>
+                <input type="text" id="trello-label-nome" class="form-input-new" placeholder="Ex: Prioridade, Houseclub">
+
+                <div class="trello-label-colors" id="trello-label-cores">
+                    ${palette.map((cor, idx) => `
+                        <button
+                            type="button"
+                            class="trello-label-color ${idx === 0 ? 'selected' : ''}"
+                            style="background: ${cor};"
+                            data-color="${cor}"
+                            onclick="selecionarCorEtiqueta('${cor}', this)"
+                        ></button>
                     `).join('')}
-                </select>
-                <div style="display: flex; gap: 8px;">
-                    <button class="btn-new btn-primary-new" onclick="adicionarEtiqueta(${tarefaId})">
-                        Adicionar
-                    </button>
-                    <button class="btn-new btn-secondary-new" onclick="cancelarSeletorEtiquetas(${tarefaId})">
-                        Cancelar
-                    </button>
+                </div>
+
+                <div class="trello-label-editor-actions">
+                    <button class="btn-new btn-primary-new" onclick="salvarEtiquetaTrello()">Salvar</button>
+                    <button class="btn-new btn-secondary-new" onclick="cancelarEdicaoEtiqueta()">Cancelar</button>
+                    <button class="btn-new btn-secondary-new danger" onclick="excluirEtiquetaTrello()">Excluir</button>
                 </div>
             </div>
         </div>
     `;
 }
 
-/**
- * Badge de etiqueta
- */
-export function EtiquetaBadge({ tarefaId, etiqueta, removivel = false }) {
+export function EtiquetaRow({ tarefaId, etiqueta, marcado = false, associacaoId = '' }) {
     return `
-        <span class="etiqueta-badge" style="background: ${etiqueta.cor}" data-etiqueta-id="${etiqueta.id}">
-            ${etiqueta.nome}
-            ${removivel ? `
-                <button class="etiqueta-remove" onclick="removerEtiqueta(${etiqueta.id}, ${tarefaId})" title="Remover etiqueta">
-                    ✕
-                </button>
-            ` : ''}
-        </span>
+        <label class="trello-label-row" data-nome="${etiqueta.nome.toLowerCase()}">
+            <input
+                type="checkbox"
+                ${marcado ? 'checked' : ''}
+                onclick="toggleEtiquetaTarefa(${etiqueta.id}, this)"
+                data-associacao-id="${associacaoId}"
+            >
+            <span class="trello-label-swatch" style="background: ${etiqueta.cor};"></span>
+            <span class="trello-label-name">${etiqueta.nome}</span>
+            <button type="button" class="trello-label-edit" onclick="editarEtiquetaTrello(${etiqueta.id})" title="Editar etiqueta">
+                ✏️
+            </button>
+        </label>
     `;
 }

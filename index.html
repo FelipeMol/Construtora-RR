@@ -1936,6 +1936,14 @@
                             class="trello-description-editor"
                             contenteditable="true"
                         ></div>
+                        <div class="trello-description-actions">
+                            <button id="btn-salvar-descricao" class="btn-new btn-primary-new" onclick="salvarDescricaoTrello()">
+                                💾 Salvar descrição
+                            </button>
+                            <button class="btn-new btn-secondary-new" onclick="cancelarEdicaoDescricao()">
+                                Cancelar
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Checklist -->
@@ -2002,6 +2010,16 @@
                             <span class="icon">📎</span>
                             <span>Anexo</span>
                         </button>
+                    </div>
+
+                    <div id="trello-date-picker" class="trello-date-picker hidden">
+                        <label for="trello-date-input">Selecionar data</label>
+                        <input type="date" id="trello-date-input" class="form-input-new">
+                        <div class="trello-date-actions">
+                            <button class="trello-sidebar-btn" onclick="salvarDataTrello()">Salvar data</button>
+                            <button class="trello-sidebar-btn" onclick="limparDataTrello()">Limpar data</button>
+                            <button class="trello-sidebar-btn" onclick="cancelarSeletorData()">Fechar</button>
+                        </div>
                     </div>
 
                     <div class="sidebar-section">

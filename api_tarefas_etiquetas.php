@@ -37,6 +37,7 @@ switch ($metodo) {
             // Buscar etiquetas da tarefa
             $stmt = $pdo->prepare("
                 SELECT
+                    te.id as associacao_id,
                     e.id,
                     e.nome,
                     e.cor,

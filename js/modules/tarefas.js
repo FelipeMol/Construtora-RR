@@ -775,6 +775,9 @@ function preencherDropdownEmpresas() {
 let currentTarefaId = null; // ID da tarefa aberta no modal
 let todasEtiquetas = []; // Cache de etiquetas
 let todosUsuarios = []; // Cache de usuários
+let currentTarefaDados = null; // Cache da tarefa aberta
+let descricaoOriginal = '';
+let dataPrazoOriginal = null;
 
 /**
  * Abrir modal Trello com detalhes da tarefa
@@ -798,15 +801,20 @@ export async function abrirModalTrello(tarefaId) {
             return;
         }
 
+        currentTarefaDados = tarefa;
+        descricaoOriginal = tarefa.descricao || '';
+        dataPrazoOriginal = tarefa.data_prazo || '';
+
         // Carregar dados em paralelo
-        const [etiquetasResponse, checklistResponse, membrosResponse, anexosResponse, atividadesResponse, todasEtiquetasResponse, usuariosResponse] = await Promise.all([
+        const [etiquetasResponse, checklistResponse, membrosResponse, anexosResponse, atividadesResponse, todasEtiquetasResponse, usuariosResponse, comentariosResponse] = await Promise.all([
             TarefasEtiquetasAPI.listar(tarefaId),
             ChecklistAPI.listar(tarefaId),
             MembrosAPI.listar(tarefaId),
             AnexosAPI.listar(tarefaId),
             AtividadesAPI.listar(tarefaId),
             EtiquetasAPI.listar(),
-            UsuariosAPI.listar()
+            UsuariosAPI.listar(),
+            ComentariosAPI.listar(tarefaId)
         ]);
 
         // Armazenar cache
@@ -815,7 +823,17 @@ export async function abrirModalTrello(tarefaId) {
 
         // Preencher modal
         document.getElementById('trello-tarefa-titulo').textContent = tarefa.titulo;
-        document.getElementById('trello-tarefa-descricao').innerHTML = tarefa.descricao || '';
+
+        const descricaoEl = document.getElementById('trello-tarefa-descricao');
+        if (descricaoEl) {
+            descricaoEl.innerHTML = descricaoOriginal;
+            descricaoEl.addEventListener('input', syncDescricaoButtons);
+        }
+
+        const btnSalvarDescricao = document.getElementById('btn-salvar-descricao');
+        if (btnSalvarDescricao) {
+            btnSalvarDescricao.disabled = true;
+        }
 
         // Detalhes na sidebar
         document.getElementById('trello-tarefa-status-text').textContent = tarefa.status || '-';
@@ -830,6 +848,7 @@ export async function abrirModalTrello(tarefaId) {
         renderizarMembrosTrello(membrosResponse.sucesso ? membrosResponse.dados : []);
         renderizarAnexosTrello(anexosResponse.sucesso ? anexosResponse.dados : []);
         renderizarAtividadesTrello(atividadesResponse.sucesso ? atividadesResponse.dados.atividades : []);
+        renderizarComentariosTrello(comentariosResponse.sucesso ? comentariosResponse.dados : []);
 
         // Mostrar modal
         modal.classList.add('show');
@@ -866,7 +885,8 @@ function renderizarEtiquetasTrello(etiquetas) {
     container.innerHTML = EtiquetasSection({
         tarefaId: currentTarefaId,
         etiquetas,
-        todasEtiquetas
+        todasEtiquetas,
+        cores: LABEL_COLORS
     });
 }
 
@@ -921,73 +941,226 @@ function renderizarAtividadesTrello(atividades) {
     container.innerHTML = ActivityTimeline({ atividades });
 }
 
+function renderizarComentariosTrello(comentarios) {
+    const container = document.getElementById('trello-comentarios-container');
+    if (!container) return;
+
+    if (!comentarios || comentarios.length === 0) {
+        container.innerHTML = '<p class="text-muted" style="font-size: 14px;">Nenhum comentário ainda</p>';
+        return;
+    }
+
+    const html = comentarios.map(c => {
+        const autor = c.usuario_nome || c.autor || c.nome || 'Usuário';
+        const texto = c.comentario || c.texto || '';
+        const quando = c.criado_em || c.data_criacao || c.data || '';
+        const avatar = c.usuario_avatar;
+        const dataFormatada = quando ? formatDate(quando) : '';
+
+        return `
+            <div class="trello-comment-item">
+                <div class="trello-comment-avatar">
+                    ${avatar ? `<img src="${avatar}" alt="${autor}">` : gerarAvatar(autor)}
+                </div>
+                <div class="trello-comment-body">
+                    <div class="trello-comment-header">
+                        <span class="trello-comment-author">${autor}</span>
+                        ${dataFormatada ? `<span class="trello-comment-date">${dataFormatada}</span>` : ''}
+                    </div>
+                    <div class="trello-comment-text">${texto}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    container.innerHTML = html;
+}
+
+async function carregarComentariosTrello() {
+    try {
+        const response = await ComentariosAPI.listar(currentTarefaId);
+        if (response.sucesso) {
+            renderizarComentariosTrello(response.dados || []);
+        }
+    } catch (error) {
+        console.error('Erro ao carregar comentários:', error);
+    }
+}
+
 // ========================================
 // FUNÇÕES DE ETIQUETAS
 // ========================================
 
 window.mostrarSeletorEtiquetas = function() {
-    const selector = document.getElementById(`selector-etiquetas-${currentTarefaId}`);
-    if (selector) selector.classList.remove('hidden');
+    const panel = document.getElementById('trello-labels-panel');
+    if (panel) panel.classList.remove('hidden');
 };
 
 window.cancelarSeletorEtiquetas = function() {
-    const selector = document.getElementById(`selector-etiquetas-${currentTarefaId}`);
-    if (selector) selector.classList.add('hidden');
+    const panel = document.getElementById('trello-labels-panel');
+    if (panel) panel.classList.add('hidden');
 };
 
-window.adicionarEtiqueta = async function() {
-    const selectEtiqueta = document.getElementById(`select-etiqueta-${currentTarefaId}`);
-    const etiquetaId = selectEtiqueta?.value;
+window.filtrarEtiquetasTrello = function(term) {
+    filtroEtiquetasTerm = (term || '').toLowerCase();
+    const list = document.getElementById('trello-labels-list');
+    if (!list) return;
+    const rows = list.querySelectorAll('.trello-label-row');
+    rows.forEach(row => {
+        const nome = row.dataset.nome || '';
+        row.style.display = nome.includes(filtroEtiquetasTerm) ? 'grid' : 'none';
+    });
+};
 
-    if (!etiquetaId) {
-        showNotification('Selecione uma etiqueta', 'erro');
+window.abrirCriarEtiqueta = function() {
+    etiquetaEmEdicao = null;
+    etiquetaCorSelecionada = LABEL_COLORS[0];
+    const editor = document.getElementById('trello-label-editor');
+    const inputNome = document.getElementById('trello-label-nome');
+    if (inputNome) inputNome.value = '';
+    document.querySelectorAll('.trello-label-color').forEach(btn => {
+        btn.classList.toggle('selected', btn.dataset.color === etiquetaCorSelecionada);
+    });
+    if (editor) editor.classList.remove('hidden');
+};
+
+window.selecionarCorEtiqueta = function(cor, btn) {
+    etiquetaCorSelecionada = cor;
+    document.querySelectorAll('.trello-label-color').forEach(el => el.classList.remove('selected'));
+    if (btn) btn.classList.add('selected');
+};
+
+window.editarEtiquetaTrello = function(etiquetaId) {
+    const etiqueta = (todasEtiquetas || []).find(e => Number(e.id) === Number(etiquetaId));
+    if (!etiqueta) return;
+    etiquetaEmEdicao = etiquetaId;
+    etiquetaCorSelecionada = etiqueta.cor;
+    const editor = document.getElementById('trello-label-editor');
+    const inputNome = document.getElementById('trello-label-nome');
+    if (inputNome) inputNome.value = etiqueta.nome;
+    document.querySelectorAll('.trello-label-color').forEach(btn => {
+        btn.classList.toggle('selected', btn.dataset.color === etiquetaCorSelecionada);
+    });
+    if (editor) editor.classList.remove('hidden');
+};
+
+window.cancelarEdicaoEtiqueta = function() {
+    const editor = document.getElementById('trello-label-editor');
+    if (editor) editor.classList.add('hidden');
+    etiquetaEmEdicao = null;
+};
+
+window.salvarEtiquetaTrello = async function() {
+    const nomeInput = document.getElementById('trello-label-nome');
+    const nome = nomeInput?.value?.trim();
+    if (!nome) {
+        showNotification('Informe um nome para a etiqueta', 'erro');
         return;
     }
 
+    const payload = { nome, cor: etiquetaCorSelecionada };
+
     try {
-        showLoading('Adicionando etiqueta...');
-        const response = await TarefasEtiquetasAPI.adicionar({
-            tarefa_id: currentTarefaId,
-            etiqueta_id: etiquetaId
-        });
+        showLoading(etiquetaEmEdicao ? 'Atualizando etiqueta...' : 'Criando etiqueta...');
+        const response = etiquetaEmEdicao
+            ? await EtiquetasAPI.atualizar(etiquetaEmEdicao, payload)
+            : await EtiquetasAPI.criar(payload);
 
         if (response.sucesso) {
-            showNotification(response.mensagem, 'sucesso');
-            // Recarregar etiquetas
+            showNotification('Etiqueta salva', 'sucesso');
+            const todasEtiquetasResponse = await EtiquetasAPI.listar();
+            todasEtiquetas = todasEtiquetasResponse.sucesso ? todasEtiquetasResponse.dados : todasEtiquetas;
             const etiquetasResponse = await TarefasEtiquetasAPI.listar(currentTarefaId);
             renderizarEtiquetasTrello(etiquetasResponse.sucesso ? etiquetasResponse.dados : []);
-            cancelarSeletorEtiquetas();
+            cancelarEdicaoEtiqueta();
         } else {
-            showNotification(response.mensagem, 'erro');
+            showNotification(response.mensagem || 'Erro ao salvar etiqueta', 'erro');
         }
     } catch (error) {
-        console.error('Erro ao adicionar etiqueta:', error);
-        showNotification('Erro ao adicionar etiqueta', 'erro');
+        console.error('Erro ao salvar etiqueta:', error);
+        showNotification('Erro ao salvar etiqueta', 'erro');
     } finally {
         hideLoading();
     }
 };
 
-window.removerEtiqueta = async function(etiquetaId) {
-    if (!confirm('Remover esta etiqueta?')) return;
+window.excluirEtiquetaTrello = async function() {
+    if (!etiquetaEmEdicao) {
+        showNotification('Selecione uma etiqueta para excluir', 'erro');
+        return;
+    }
+
+    if (!confirm('Excluir esta etiqueta?')) return;
 
     try {
-        showLoading('Removendo etiqueta...');
-        const response = await TarefasEtiquetasAPI.remover(etiquetaId);
-
+        showLoading('Excluindo etiqueta...');
+        const response = await EtiquetasAPI.excluir(etiquetaEmEdicao);
         if (response.sucesso) {
-            showNotification(response.mensagem, 'sucesso');
-            // Recarregar etiquetas
+            showNotification('Etiqueta excluída', 'sucesso');
+            const todasEtiquetasResponse = await EtiquetasAPI.listar();
+            todasEtiquetas = todasEtiquetasResponse.sucesso ? todasEtiquetasResponse.dados : todasEtiquetas;
             const etiquetasResponse = await TarefasEtiquetasAPI.listar(currentTarefaId);
             renderizarEtiquetasTrello(etiquetasResponse.sucesso ? etiquetasResponse.dados : []);
+            cancelarEdicaoEtiqueta();
         } else {
-            showNotification(response.mensagem, 'erro');
+            showNotification(response.mensagem || 'Erro ao excluir etiqueta', 'erro');
         }
     } catch (error) {
-        console.error('Erro ao remover etiqueta:', error);
-        showNotification('Erro ao remover etiqueta', 'erro');
+        console.error('Erro ao excluir etiqueta:', error);
+        showNotification('Erro ao excluir etiqueta', 'erro');
     } finally {
         hideLoading();
+    }
+};
+
+window.toggleEtiquetaTarefa = async function(etiquetaId, checkbox) {
+    const marcado = checkbox.checked;
+    const associacaoId = checkbox.dataset.associacaoId;
+
+    if (marcado) {
+        try {
+            showLoading('Adicionando etiqueta...');
+            const response = await TarefasEtiquetasAPI.adicionar({
+                tarefa_id: currentTarefaId,
+                etiqueta_id: etiquetaId
+            });
+
+            if (response.sucesso) {
+                showNotification('Etiqueta adicionada', 'sucesso');
+                const etiquetasResponse = await TarefasEtiquetasAPI.listar(currentTarefaId);
+                renderizarEtiquetasTrello(etiquetasResponse.sucesso ? etiquetasResponse.dados : []);
+            } else {
+                showNotification(response.mensagem || 'Erro ao adicionar etiqueta', 'erro');
+                checkbox.checked = false;
+            }
+        } catch (error) {
+            console.error('Erro ao adicionar etiqueta:', error);
+            showNotification('Erro ao adicionar etiqueta', 'erro');
+            checkbox.checked = false;
+        } finally {
+            hideLoading();
+        }
+    } else {
+        // remover
+        const idParaRemover = associacaoId || etiquetaId;
+        try {
+            showLoading('Removendo etiqueta...');
+            const response = await TarefasEtiquetasAPI.remover(idParaRemover);
+            if (response.sucesso) {
+                showNotification('Etiqueta removida', 'sucesso');
+                const etiquetasResponse = await TarefasEtiquetasAPI.listar(currentTarefaId);
+                renderizarEtiquetasTrello(etiquetasResponse.sucesso ? etiquetasResponse.dados : []);
+            } else {
+                showNotification(response.mensagem || 'Erro ao remover etiqueta', 'erro');
+                checkbox.checked = true;
+            }
+        } catch (error) {
+            console.error('Erro ao remover etiqueta:', error);
+            showNotification('Erro ao remover etiqueta', 'erro');
+            checkbox.checked = true;
+        } finally {
+            hideLoading();
+        }
     }
 };
 
@@ -1278,6 +1451,11 @@ const STATUS_MAP = {
     'Cancelado': 'cancelado'
 };
 
+const LABEL_COLORS = ['#61bd4f', '#f2d600', '#ff9f1a', '#eb5a46', '#c377e0', '#0079bf', '#00c2e0', '#51e898', '#ff78cb', '#344563'];
+let etiquetaEmEdicao = null;
+let etiquetaCorSelecionada = LABEL_COLORS[0];
+let filtroEtiquetasTerm = '';
+
 function mapStatusLabelToCode(labelOuCode) {
     // Se já for um dos códigos, retorna direto
     const lower = (labelOuCode || '').toLowerCase();
@@ -1377,7 +1555,7 @@ window.adicionarComentarioTrello = async function() {
         if (response.sucesso) {
             showNotification('Comentário adicionado', 'sucesso');
             textarea.value = '';
-            await carregarComentarios(currentTarefaId);
+            await carregarComentariosTrello();
         } else {
             showNotification(response.mensagem || 'Erro ao adicionar comentário', 'erro');
         }
@@ -1387,6 +1565,97 @@ window.adicionarComentarioTrello = async function() {
     } finally {
         hideLoading();
     }
+};
+
+function syncDescricaoButtons() {
+    const editor = document.getElementById('trello-tarefa-descricao');
+    const btnSalvar = document.getElementById('btn-salvar-descricao');
+    if (!editor || !btnSalvar) return;
+    const atual = (editor.innerHTML || '').trim();
+    const original = (descricaoOriginal || '').trim();
+    btnSalvar.disabled = atual === original;
+}
+
+window.salvarDescricaoTrello = async function() {
+    const editor = document.getElementById('trello-tarefa-descricao');
+    if (!editor) return;
+
+    const novaDescricao = (editor.innerHTML || '').trim();
+
+    try {
+        showLoading('Salvando descrição...');
+        const response = await TarefasAPI.atualizar(currentTarefaId, { descricao: novaDescricao });
+        if (response.sucesso) {
+            showNotification('Descrição salva', 'sucesso');
+            descricaoOriginal = novaDescricao;
+            if (currentTarefaDados) currentTarefaDados.descricao = novaDescricao;
+            tarefasActions.update(currentTarefaId, { descricao: novaDescricao });
+            syncDescricaoButtons();
+        } else {
+            showNotification(response.mensagem || 'Erro ao salvar descrição', 'erro');
+        }
+    } catch (error) {
+        console.error('Erro ao salvar descrição:', error);
+        showNotification('Erro ao salvar descrição', 'erro');
+    } finally {
+        hideLoading();
+    }
+};
+
+window.cancelarEdicaoDescricao = function() {
+    const editor = document.getElementById('trello-tarefa-descricao');
+    if (editor) {
+        editor.innerHTML = descricaoOriginal;
+        syncDescricaoButtons();
+    }
+};
+
+window.mostrarSeletorData = function() {
+    const picker = document.getElementById('trello-date-picker');
+    if (!picker) return;
+    const input = document.getElementById('trello-date-input');
+    if (input) {
+        input.value = dataPrazoOriginal || '';
+    }
+    picker.classList.remove('hidden');
+};
+
+window.cancelarSeletorData = function() {
+    const picker = document.getElementById('trello-date-picker');
+    if (picker) picker.classList.add('hidden');
+};
+
+async function atualizarPrazoTrello(novoPrazo) {
+    try {
+        showLoading('Atualizando prazo...');
+        const response = await TarefasAPI.atualizar(currentTarefaId, { data_prazo: novoPrazo });
+        if (response.sucesso) {
+            showNotification('Prazo atualizado', 'sucesso');
+            dataPrazoOriginal = novoPrazo || '';
+            if (currentTarefaDados) currentTarefaDados.data_prazo = novoPrazo || null;
+            tarefasActions.update(currentTarefaId, { data_prazo: novoPrazo || null });
+            const prazoText = document.getElementById('trello-tarefa-prazo-text');
+            if (prazoText) prazoText.textContent = novoPrazo ? formatDate(novoPrazo) : '-';
+            cancelarSeletorData();
+        } else {
+            showNotification(response.mensagem || 'Erro ao atualizar data', 'erro');
+        }
+    } catch (error) {
+        console.error('Erro ao atualizar prazo:', error);
+        showNotification('Erro ao atualizar data', 'erro');
+    } finally {
+        hideLoading();
+    }
+}
+
+window.salvarDataTrello = async function() {
+    const input = document.getElementById('trello-date-input');
+    const valor = input?.value || null;
+    await atualizarPrazoTrello(valor);
+};
+
+window.limparDataTrello = async function() {
+    await atualizarPrazoTrello(null);
 };
 
 // Exportar funções para window (onclick compatibility)
