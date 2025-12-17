@@ -31,7 +31,15 @@ export const API_CONFIG = {
 
         // Tarefas
         tarefas: 'api_tarefas.php',
-        tarefas_comentarios: 'api_tarefas_comentarios.php'
+        tarefas_comentarios: 'api_tarefas_comentarios.php',
+
+        // Tarefas Trello
+        etiquetas: 'api_etiquetas.php',
+        tarefas_etiquetas: 'api_tarefas_etiquetas.php',
+        tarefas_checklists: 'api_tarefas_checklists.php',
+        tarefas_membros: 'api_tarefas_membros.php',
+        tarefas_anexos: 'api_tarefas_anexos.php',
+        tarefas_atividades: 'api_tarefas_atividades.php'
     }
 };
 

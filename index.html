@@ -7,6 +7,7 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏗️</text></svg>">
     <link rel="stylesheet" href="styles.css?v=4.0">
     <link rel="stylesheet" href="modal-tarefa-modern.css?v=1.0">
+    <link rel="stylesheet" href="trello-style.css?v=1.0">
 </head>
 <body>
     <!-- Header com Logo e Toggle -->
@@ -1898,6 +1899,160 @@
                 <button type="button" class="btn btn-secondary" onclick="fecharModal('modal-detalhe-tarefa')">
                     Fechar
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Detalhes da Tarefa - ESTILO TRELLO -->
+    <div id="modal-tarefa-trello" class="modal-backdrop-trello">
+        <div class="modal-trello-container">
+            <!-- Header -->
+            <div class="modal-trello-header">
+                <h1 id="trello-tarefa-titulo" class="modal-trello-title" contenteditable="true">
+                    Título da Tarefa
+                </h1>
+                <button class="modal-trello-close" onclick="fecharModalTrello()" aria-label="Fechar">
+                    ×
+                </button>
+            </div>
+
+            <!-- Body com Grid -->
+            <div class="modal-trello-body">
+                <!-- Coluna Principal (70%) -->
+                <div class="modal-trello-main">
+                    <!-- Etiquetas -->
+                    <div id="trello-section-etiquetas"></div>
+
+                    <!-- Descrição -->
+                    <div class="trello-section">
+                        <div class="trello-section-header">
+                            <h3 class="trello-section-title">
+                                <span class="icon">📝</span>
+                                <span>Descrição</span>
+                            </h3>
+                        </div>
+                        <div
+                            id="trello-tarefa-descricao"
+                            class="trello-description-editor"
+                            contenteditable="true"
+                        ></div>
+                    </div>
+
+                    <!-- Checklist -->
+                    <div id="trello-section-checklist"></div>
+
+                    <!-- Anexos -->
+                    <div id="trello-section-anexos"></div>
+
+                    <!-- Comentários -->
+                    <div class="trello-section">
+                        <div class="trello-section-header">
+                            <h3 class="trello-section-title">
+                                <span class="icon">💬</span>
+                                <span>Comentários</span>
+                            </h3>
+                        </div>
+                        <div id="trello-comentarios-container"></div>
+
+                        <!-- Formulário de novo comentário -->
+                        <div style="margin-top: 16px;">
+                            <textarea
+                                id="trello-novo-comentario"
+                                class="form-input-new"
+                                placeholder="Escreva um comentário..."
+                                rows="3"
+                                style="margin-bottom: 8px;"
+                            ></textarea>
+                            <button class="btn-new btn-primary-new" onclick="adicionarComentarioTrello()">
+                                💬 Comentar
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Atividades -->
+                    <div id="trello-section-atividades"></div>
+                </div>
+
+                <!-- Sidebar Direita (30%) -->
+                <div class="modal-trello-sidebar">
+                    <div class="sidebar-section">
+                        <h4 class="sidebar-title">Adicionar à tarefa</h4>
+
+                        <button class="trello-sidebar-btn" onclick="mostrarSeletorMembros()">
+                            <span class="icon">👥</span>
+                            <span>Membros</span>
+                        </button>
+
+                        <button class="trello-sidebar-btn" onclick="mostrarSeletorEtiquetas()">
+                            <span class="icon">🏷️</span>
+                            <span>Etiquetas</span>
+                        </button>
+
+                        <button class="trello-sidebar-btn" onclick="mostrarFormNovoItemChecklist()">
+                            <span class="icon">☑️</span>
+                            <span>Checklist</span>
+                        </button>
+
+                        <button class="trello-sidebar-btn" onclick="mostrarSeletorData()">
+                            <span class="icon">📅</span>
+                            <span>Data</span>
+                        </button>
+
+                        <button class="trello-sidebar-btn" onclick="mostrarFormUploadAnexo()">
+                            <span class="icon">📎</span>
+                            <span>Anexo</span>
+                        </button>
+                    </div>
+
+                    <div class="sidebar-section">
+                        <h4 class="sidebar-title">Ações</h4>
+
+                        <button class="trello-sidebar-btn" onclick="editarTarefaTrello()">
+                            <span class="icon">✏️</span>
+                            <span>Editar</span>
+                        </button>
+
+                        <button class="trello-sidebar-btn" onclick="moverTarefaTrello()">
+                            <span class="icon">➡️</span>
+                            <span>Mover</span>
+                        </button>
+
+                        <button class="trello-sidebar-btn" onclick="copiarTarefaTrello()">
+                            <span class="icon">📋</span>
+                            <span>Copiar</span>
+                        </button>
+
+                        <button class="trello-sidebar-btn danger" onclick="excluirTarefaTrello()">
+                            <span class="icon">🗑️</span>
+                            <span>Excluir</span>
+                        </button>
+                    </div>
+
+                    <!-- Seção de Membros -->
+                    <div class="sidebar-section" id="trello-section-membros"></div>
+
+                    <!-- Informações extras -->
+                    <div class="sidebar-section">
+                        <h4 class="sidebar-title">Detalhes</h4>
+                        <div style="font-size: 12px; color: #5e6c84; line-height: 1.6;">
+                            <div style="margin-bottom: 8px;">
+                                <strong>Status:</strong> <span id="trello-tarefa-status-text">-</span>
+                            </div>
+                            <div style="margin-bottom: 8px;">
+                                <strong>Prioridade:</strong> <span id="trello-tarefa-prioridade-text">-</span>
+                            </div>
+                            <div style="margin-bottom: 8px;">
+                                <strong>Responsável:</strong> <span id="trello-tarefa-responsavel-text">-</span>
+                            </div>
+                            <div style="margin-bottom: 8px;">
+                                <strong>Prazo:</strong> <span id="trello-tarefa-prazo-text">-</span>
+                            </div>
+                            <div style="margin-bottom: 8px;">
+                                <strong>Criado em:</strong> <span id="trello-tarefa-criado-text">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

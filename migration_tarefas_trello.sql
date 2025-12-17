@@ -89,16 +89,18 @@ CREATE TABLE IF NOT EXISTS tarefas_atividades (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Adicionar novos campos na tabela tarefas existente
-ALTER TABLE tarefas
-    ADD COLUMN IF NOT EXISTS posicao_coluna INT DEFAULT 0 AFTER status,
-    ADD COLUMN IF NOT EXISTS cor_customizada VARCHAR(7) AFTER prioridade,
-    ADD COLUMN IF NOT EXISTS estimativa_horas DECIMAL(5,2) AFTER cor_customizada,
-    ADD COLUMN IF NOT EXISTS tempo_gasto DECIMAL(5,2) DEFAULT 0 AFTER estimativa_horas,
-    ADD COLUMN IF NOT EXISTS data_inicio DATE AFTER data_prazo,
-    ADD COLUMN IF NOT EXISTS arquivada BOOLEAN DEFAULT FALSE AFTER cancelado;
+-- (Comentar os campos que já existem para evitar erro)
 
--- Índice para melhorar performance em drag-and-drop
-ALTER TABLE tarefas ADD INDEX idx_posicao (status, posicao_coluna);
+-- Descomente APENAS os campos que NÃO existem na sua tabela:
+-- ALTER TABLE tarefas ADD COLUMN posicao_coluna INT DEFAULT 0 AFTER status;
+-- ALTER TABLE tarefas ADD COLUMN cor_customizada VARCHAR(7) AFTER prioridade;
+-- ALTER TABLE tarefas ADD COLUMN estimativa_horas DECIMAL(5,2) AFTER cor_customizada;
+-- ALTER TABLE tarefas ADD COLUMN tempo_gasto DECIMAL(5,2) DEFAULT 0 AFTER estimativa_horas;
+-- ALTER TABLE tarefas ADD COLUMN data_inicio DATE AFTER data_prazo;
+-- ALTER TABLE tarefas ADD COLUMN arquivada BOOLEAN DEFAULT FALSE AFTER cancelado;
+
+-- Índice para melhorar performance em drag-and-drop (se não existir)
+-- ALTER TABLE tarefas ADD INDEX idx_posicao (status, posicao_coluna);
 
 -- Etiquetas padrão (8 tags coloridas)
 INSERT INTO etiquetas (nome, cor) VALUES
@@ -113,8 +115,8 @@ INSERT INTO etiquetas (nome, cor) VALUES
 ON DUPLICATE KEY UPDATE nome=nome;
 
 -- Atualizar campo editado_em na tabela de comentários (para permitir edição)
-ALTER TABLE tarefas_comentarios
-    ADD COLUMN IF NOT EXISTS editado_em TIMESTAMP NULL AFTER atualizado_em;
+-- Descomente se a coluna NÃO existir:
+-- ALTER TABLE tarefas_comentarios ADD COLUMN editado_em TIMESTAMP NULL AFTER atualizado_em;
 
 -- ========================================
 -- VIEWS para facilitar queries complexas
@@ -125,7 +127,7 @@ CREATE OR REPLACE VIEW view_tarefas_resumo AS
 SELECT
     t.*,
     u.nome AS usuario_responsavel_nome,
-    u.email AS usuario_responsavel_email,
+    u.email AS usuario_Xresponsavel_email,
     f.nome AS funcionario_nome,
     o.nome AS obra_nome,
     e.nome AS empresa_nome,

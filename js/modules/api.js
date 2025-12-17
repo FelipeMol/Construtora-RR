@@ -190,3 +190,66 @@ export const ComentariosAPI = {
     criar: (data) => fetchAPI('tarefas_comentarios', { method: 'POST', data }),
     excluir: (id) => fetchAPI('tarefas_comentarios', { method: 'DELETE', id })
 };
+
+// ========================================
+// NOVAS APIS TRELLO
+// ========================================
+
+// Etiquetas
+export const EtiquetasAPI = {
+    listar: () => fetchAPI('etiquetas'),
+    criar: (data) => fetchAPI('etiquetas', { method: 'POST', data }),
+    atualizar: (id, data) => fetchAPI('etiquetas', { method: 'PUT', id, data }),
+    excluir: (id) => fetchAPI('etiquetas', { method: 'DELETE', id })
+};
+
+// Tarefas <-> Etiquetas (associação)
+export const TarefasEtiquetasAPI = {
+    listar: (tarefaId) => fetchAPI('tarefas_etiquetas', { params: { tarefa_id: tarefaId } }),
+    adicionar: (data) => fetchAPI('tarefas_etiquetas', { method: 'POST', data }),
+    remover: (id) => fetchAPI('tarefas_etiquetas', { method: 'DELETE', id })
+};
+
+// Checklist
+export const ChecklistAPI = {
+    listar: (tarefaId) => fetchAPI('tarefas_checklists', { params: { tarefa_id: tarefaId } }),
+    criar: (data) => fetchAPI('tarefas_checklists', { method: 'POST', data }),
+    atualizar: (id, data) => fetchAPI('tarefas_checklists', { method: 'PUT', id, data }),
+    excluir: (id) => fetchAPI('tarefas_checklists', { method: 'DELETE', id })
+};
+
+// Membros
+export const MembrosAPI = {
+    listar: (tarefaId) => fetchAPI('tarefas_membros', { params: { tarefa_id: tarefaId } }),
+    adicionar: (data) => fetchAPI('tarefas_membros', { method: 'POST', data }),
+    atualizarPapel: (id, data) => fetchAPI('tarefas_membros', { method: 'PUT', id, data }),
+    remover: (id) => fetchAPI('tarefas_membros', { method: 'DELETE', id })
+};
+
+// Anexos
+export const AnexosAPI = {
+    listar: (tarefaId) => fetchAPI('tarefas_anexos', { params: { tarefa_id: tarefaId } }),
+    upload: async (tarefaId, arquivo) => {
+        const formData = new FormData();
+        formData.append('tarefa_id', tarefaId);
+        formData.append('arquivo', arquivo);
+
+        const token = obterToken();
+        const response = await fetch(API_CONFIG.baseURL + API_CONFIG.endpoints.tarefas_anexos, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            body: formData
+        });
+
+        return await response.json();
+    },
+    excluir: (id) => fetchAPI('tarefas_anexos', { method: 'DELETE', id }),
+    download: (id) => API_CONFIG.baseURL + API_CONFIG.endpoints.tarefas_anexos + '?download=1&id=' + id
+};
+
+// Atividades
+export const AtividadesAPI = {
+    listar: (tarefaId, params = {}) => fetchAPI('tarefas_atividades', { params: { tarefa_id: tarefaId, ...params } })
+};

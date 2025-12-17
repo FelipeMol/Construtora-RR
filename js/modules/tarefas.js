@@ -2,10 +2,11 @@
 // MÓDULO: TAREFAS (Kanban Board)
 // ========================================
 
-import { TarefasAPI, ComentariosAPI, UsuariosAPI } from './api.js';
+import { TarefasAPI, ComentariosAPI, UsuariosAPI, EtiquetasAPI, TarefasEtiquetasAPI, ChecklistAPI, MembrosAPI, AnexosAPI, AtividadesAPI } from './api.js';
 import { tarefasActions, comentariosActions, tarefasFiltersActions, funcionariosActions, obrasActions, empresasActions, usuariosActions } from './store.js';
 import { showNotification, showLoading, hideLoading, abrirModal, fecharModal } from './ui.js';
 import { KanbanColumn, TaskCard, CommentThread, TaskFilterPanel } from './components.js';
+import { TrelloTaskCard, TrelloKanbanColumn, ChecklistSection, MembersSection, AttachmentsSection, ActivityTimeline, EtiquetasSection } from './trello-components.js';
 import { MESSAGES, TAREFAS_CONFIG } from './config.js';
 import { formatDate, gerarAvatar } from './utils.js';
 import { ehAdmin as verificarEhAdmin, temPermissao, obterUsuario } from './auth.js';
@@ -767,10 +768,511 @@ function preencherDropdownEmpresas() {
     });
 }
 
+// ========================================
+// FUNÇÕES DO MODAL TRELLO
+// ========================================
+
+let currentTarefaId = null; // ID da tarefa aberta no modal
+let todasEtiquetas = []; // Cache de etiquetas
+let todosUsuarios = []; // Cache de usuários
+
+/**
+ * Abrir modal Trello com detalhes da tarefa
+ */
+export async function abrirModalTrello(tarefaId) {
+    currentTarefaId = tarefaId;
+    const modal = document.getElementById('modal-tarefa-trello');
+
+    if (!modal) {
+        console.error('Modal Trello não encontrado');
+        return;
+    }
+
+    showLoading('Carregando detalhes...');
+
+    try {
+        // Carregar tarefa
+        const tarefa = tarefasActions.findById(tarefaId);
+        if (!tarefa) {
+            showNotification('Tarefa não encontrada', 'erro');
+            return;
+        }
+
+        // Carregar dados em paralelo
+        const [etiquetasResponse, checklistResponse, membrosResponse, anexosResponse, atividadesResponse, todasEtiquetasResponse, usuariosResponse] = await Promise.all([
+            TarefasEtiquetasAPI.listar(tarefaId),
+            ChecklistAPI.listar(tarefaId),
+            MembrosAPI.listar(tarefaId),
+            AnexosAPI.listar(tarefaId),
+            AtividadesAPI.listar(tarefaId),
+            EtiquetasAPI.listar(),
+            UsuariosAPI.listar()
+        ]);
+
+        // Armazenar cache
+        todasEtiquetas = todasEtiquetasResponse.sucesso ? todasEtiquetasResponse.dados : [];
+        todosUsuarios = usuariosResponse.sucesso ? usuariosResponse.dados : [];
+
+        // Preencher modal
+        document.getElementById('trello-tarefa-titulo').textContent = tarefa.titulo;
+        document.getElementById('trello-tarefa-descricao').innerHTML = tarefa.descricao || '';
+
+        // Detalhes na sidebar
+        document.getElementById('trello-tarefa-status-text').textContent = tarefa.status || '-';
+        document.getElementById('trello-tarefa-prioridade-text').textContent = tarefa.prioridade || '-';
+        document.getElementById('trello-tarefa-responsavel-text').textContent = tarefa.usuario_responsavel_nome || '-';
+        document.getElementById('trello-tarefa-prazo-text').textContent = tarefa.data_prazo ? formatDate(tarefa.data_prazo) : '-';
+        document.getElementById('trello-tarefa-criado-text').textContent = tarefa.criado_em ? formatDate(tarefa.criado_em) : '-';
+
+        // Renderizar seções
+        renderizarEtiquetasTrello(etiquetasResponse.sucesso ? etiquetasResponse.dados : []);
+        renderizarChecklistTrello(checklistResponse.sucesso ? checklistResponse.dados : checklistResponse);
+        renderizarMembrosTrello(membrosResponse.sucesso ? membrosResponse.dados : []);
+        renderizarAnexosTrello(anexosResponse.sucesso ? anexosResponse.dados : []);
+        renderizarAtividadesTrello(atividadesResponse.sucesso ? atividadesResponse.dados.atividades : []);
+
+        // Mostrar modal
+        modal.classList.add('show');
+
+    } catch (error) {
+        console.error('Erro ao abrir modal Trello:', error);
+        showNotification('Erro ao carregar detalhes da tarefa', 'erro');
+    } finally {
+        hideLoading();
+    }
+}
+
+/**
+ * Fechar modal Trello
+ */
+export function fecharModalTrello() {
+    const modal = document.getElementById('modal-tarefa-trello');
+    if (modal) {
+        modal.classList.remove('show');
+    }
+    currentTarefaId = null;
+
+    // Recarregar tarefas para atualizar o board
+    carregarTarefas();
+}
+
+/**
+ * Renderizar seção de etiquetas
+ */
+function renderizarEtiquetasTrello(etiquetas) {
+    const container = document.getElementById('trello-section-etiquetas');
+    if (!container) return;
+
+    container.innerHTML = EtiquetasSection({
+        tarefaId: currentTarefaId,
+        etiquetas,
+        todasEtiquetas
+    });
+}
+
+/**
+ * Renderizar seção de checklist
+ */
+function renderizarChecklistTrello(data) {
+    const container = document.getElementById('trello-section-checklist');
+    if (!container) return;
+
+    const items = data.items || [];
+    container.innerHTML = ChecklistSection({
+        tarefaId: currentTarefaId,
+        items
+    });
+}
+
+/**
+ * Renderizar seção de membros
+ */
+function renderizarMembrosTrello(membros) {
+    const container = document.getElementById('trello-section-membros');
+    if (!container) return;
+
+    container.innerHTML = MembersSection({
+        tarefaId: currentTarefaId,
+        membros,
+        todosUsuarios
+    });
+}
+
+/**
+ * Renderizar seção de anexos
+ */
+function renderizarAnexosTrello(anexos) {
+    const container = document.getElementById('trello-section-anexos');
+    if (!container) return;
+
+    container.innerHTML = AttachmentsSection({
+        tarefaId: currentTarefaId,
+        anexos
+    });
+}
+
+/**
+ * Renderizar seção de atividades
+ */
+function renderizarAtividadesTrello(atividades) {
+    const container = document.getElementById('trello-section-atividades');
+    if (!container) return;
+
+    container.innerHTML = ActivityTimeline({ atividades });
+}
+
+// ========================================
+// FUNÇÕES DE ETIQUETAS
+// ========================================
+
+window.mostrarSeletorEtiquetas = function() {
+    const selector = document.getElementById(`selector-etiquetas-${currentTarefaId}`);
+    if (selector) selector.classList.remove('hidden');
+};
+
+window.cancelarSeletorEtiquetas = function() {
+    const selector = document.getElementById(`selector-etiquetas-${currentTarefaId}`);
+    if (selector) selector.classList.add('hidden');
+};
+
+window.adicionarEtiqueta = async function() {
+    const selectEtiqueta = document.getElementById(`select-etiqueta-${currentTarefaId}`);
+    const etiquetaId = selectEtiqueta?.value;
+
+    if (!etiquetaId) {
+        showNotification('Selecione uma etiqueta', 'erro');
+        return;
+    }
+
+    try {
+        showLoading('Adicionando etiqueta...');
+        const response = await TarefasEtiquetasAPI.adicionar({
+            tarefa_id: currentTarefaId,
+            etiqueta_id: etiquetaId
+        });
+
+        if (response.sucesso) {
+            showNotification(response.mensagem, 'sucesso');
+            // Recarregar etiquetas
+            const etiquetasResponse = await TarefasEtiquetasAPI.listar(currentTarefaId);
+            renderizarEtiquetasTrello(etiquetasResponse.sucesso ? etiquetasResponse.dados : []);
+            cancelarSeletorEtiquetas();
+        } else {
+            showNotification(response.mensagem, 'erro');
+        }
+    } catch (error) {
+        console.error('Erro ao adicionar etiqueta:', error);
+        showNotification('Erro ao adicionar etiqueta', 'erro');
+    } finally {
+        hideLoading();
+    }
+};
+
+window.removerEtiqueta = async function(etiquetaId) {
+    if (!confirm('Remover esta etiqueta?')) return;
+
+    try {
+        showLoading('Removendo etiqueta...');
+        const response = await TarefasEtiquetasAPI.remover(etiquetaId);
+
+        if (response.sucesso) {
+            showNotification(response.mensagem, 'sucesso');
+            // Recarregar etiquetas
+            const etiquetasResponse = await TarefasEtiquetasAPI.listar(currentTarefaId);
+            renderizarEtiquetasTrello(etiquetasResponse.sucesso ? etiquetasResponse.dados : []);
+        } else {
+            showNotification(response.mensagem, 'erro');
+        }
+    } catch (error) {
+        console.error('Erro ao remover etiqueta:', error);
+        showNotification('Erro ao remover etiqueta', 'erro');
+    } finally {
+        hideLoading();
+    }
+};
+
+// ========================================
+// FUNÇÕES DE CHECKLIST
+// ========================================
+
+window.mostrarFormNovoItemChecklist = function() {
+    const form = document.getElementById(`form-novo-item-${currentTarefaId}`);
+    if (form) {
+        form.classList.remove('hidden');
+        document.getElementById(`input-novo-item-${currentTarefaId}`)?.focus();
+    }
+};
+
+window.cancelarNovoItemChecklist = function() {
+    const form = document.getElementById(`form-novo-item-${currentTarefaId}`);
+    if (form) {
+        form.classList.add('hidden');
+        document.getElementById(`input-novo-item-${currentTarefaId}`).value = '';
+    }
+};
+
+window.adicionarItemChecklist = async function() {
+    const input = document.getElementById(`input-novo-item-${currentTarefaId}`);
+    const titulo = input?.value?.trim();
+
+    if (!titulo) {
+        showNotification('Digite o título do item', 'erro');
+        return;
+    }
+
+    try {
+        showLoading('Adicionando item...');
+        const response = await ChecklistAPI.criar({
+            tarefa_id: currentTarefaId,
+            titulo
+        });
+
+        if (response.sucesso) {
+            showNotification(response.mensagem, 'sucesso');
+            // Recarregar checklist
+            const checklistResponse = await ChecklistAPI.listar(currentTarefaId);
+            renderizarChecklistTrello(checklistResponse.sucesso ? checklistResponse.dados : checklistResponse);
+            cancelarNovoItemChecklist();
+        } else {
+            showNotification(response.mensagem, 'erro');
+        }
+    } catch (error) {
+        console.error('Erro ao adicionar item:', error);
+        showNotification('Erro ao adicionar item', 'erro');
+    } finally {
+        hideLoading();
+    }
+};
+
+window.toggleChecklistItem = async function(itemId) {
+    try {
+        // Obter estado atual do checkbox
+        const checkbox = event.target;
+        const concluido = checkbox.checked;
+
+        const response = await ChecklistAPI.atualizar(itemId, { concluido });
+
+        if (response.sucesso) {
+            // Recarregar checklist
+            const checklistResponse = await ChecklistAPI.listar(currentTarefaId);
+            renderizarChecklistTrello(checklistResponse.sucesso ? checklistResponse.dados : checklistResponse);
+        } else {
+            showNotification(response.mensagem, 'erro');
+            checkbox.checked = !concluido; // Reverter
+        }
+    } catch (error) {
+        console.error('Erro ao atualizar item:', error);
+        showNotification('Erro ao atualizar item', 'erro');
+    }
+};
+
+window.excluirChecklistItem = async function(itemId) {
+    if (!confirm('Excluir este item?')) return;
+
+    try {
+        showLoading('Excluindo item...');
+        const response = await ChecklistAPI.excluir(itemId);
+
+        if (response.sucesso) {
+            showNotification(response.mensagem, 'sucesso');
+            // Recarregar checklist
+            const checklistResponse = await ChecklistAPI.listar(currentTarefaId);
+            renderizarChecklistTrello(checklistResponse.sucesso ? checklistResponse.dados : checklistResponse);
+        } else {
+            showNotification(response.mensagem, 'erro');
+        }
+    } catch (error) {
+        console.error('Erro ao excluir item:', error);
+        showNotification('Erro ao excluir item', 'erro');
+    } finally {
+        hideLoading();
+    }
+};
+
+// ========================================
+// FUNÇÕES DE MEMBROS
+// ========================================
+
+window.mostrarSeletorMembros = function() {
+    const selector = document.getElementById(`selector-membros-${currentTarefaId}`);
+    if (selector) selector.classList.remove('hidden');
+};
+
+window.cancelarSeletorMembros = function() {
+    const selector = document.getElementById(`selector-membros-${currentTarefaId}`);
+    if (selector) selector.classList.add('hidden');
+};
+
+window.adicionarMembro = async function() {
+    const selectUsuario = document.getElementById(`select-membro-${currentTarefaId}`);
+    const selectPapel = document.getElementById(`select-papel-${currentTarefaId}`);
+
+    const usuarioId = selectUsuario?.value;
+    const papel = selectPapel?.value;
+
+    if (!usuarioId) {
+        showNotification('Selecione um usuário', 'erro');
+        return;
+    }
+
+    try {
+        showLoading('Adicionando membro...');
+        const response = await MembrosAPI.adicionar({
+            tarefa_id: currentTarefaId,
+            usuario_id: usuarioId,
+            papel
+        });
+
+        if (response.sucesso) {
+            showNotification(response.mensagem, 'sucesso');
+            // Recarregar membros
+            const membrosResponse = await MembrosAPI.listar(currentTarefaId);
+            renderizarMembrosTrello(membrosResponse.sucesso ? membrosResponse.dados : []);
+            cancelarSeletorMembros();
+        } else {
+            showNotification(response.mensagem, 'erro');
+        }
+    } catch (error) {
+        console.error('Erro ao adicionar membro:', error);
+        showNotification('Erro ao adicionar membro', 'erro');
+    } finally {
+        hideLoading();
+    }
+};
+
+window.removerMembro = async function(membroId) {
+    if (!confirm('Remover este membro?')) return;
+
+    try {
+        showLoading('Removendo membro...');
+        const response = await MembrosAPI.remover(membroId);
+
+        if (response.sucesso) {
+            showNotification(response.mensagem, 'sucesso');
+            // Recarregar membros
+            const membrosResponse = await MembrosAPI.listar(currentTarefaId);
+            renderizarMembrosTrello(membrosResponse.sucesso ? membrosResponse.dados : []);
+        } else {
+            showNotification(response.mensagem, 'erro');
+        }
+    } catch (error) {
+        console.error('Erro ao remover membro:', error);
+        showNotification('Erro ao remover membro', 'erro');
+    } finally {
+        hideLoading();
+    }
+};
+
+// ========================================
+// FUNÇÕES DE ANEXOS
+// ========================================
+
+window.mostrarFormUploadAnexo = function() {
+    const form = document.getElementById(`form-upload-${currentTarefaId}`);
+    if (form) form.classList.remove('hidden');
+};
+
+window.cancelarUploadAnexo = function() {
+    const form = document.getElementById(`form-upload-${currentTarefaId}`);
+    if (form) {
+        form.classList.add('hidden');
+        document.getElementById(`input-arquivo-${currentTarefaId}`).value = '';
+    }
+};
+
+window.uploadAnexo = async function() {
+    const input = document.getElementById(`input-arquivo-${currentTarefaId}`);
+    const arquivo = input?.files[0];
+
+    if (!arquivo) {
+        showNotification('Selecione um arquivo', 'erro');
+        return;
+    }
+
+    try {
+        showLoading('Fazendo upload...');
+        const response = await AnexosAPI.upload(currentTarefaId, arquivo);
+
+        if (response.sucesso) {
+            showNotification(response.mensagem, 'sucesso');
+            // Recarregar anexos
+            const anexosResponse = await AnexosAPI.listar(currentTarefaId);
+            renderizarAnexosTrello(anexosResponse.sucesso ? anexosResponse.dados : []);
+            cancelarUploadAnexo();
+        } else {
+            showNotification(response.mensagem, 'erro');
+        }
+    } catch (error) {
+        console.error('Erro ao fazer upload:', error);
+        showNotification('Erro ao fazer upload', 'erro');
+    } finally {
+        hideLoading();
+    }
+};
+
+window.excluirAnexo = async function(anexoId) {
+    if (!confirm('Excluir este anexo?')) return;
+
+    try {
+        showLoading('Excluindo anexo...');
+        const response = await AnexosAPI.excluir(anexoId);
+
+        if (response.sucesso) {
+            showNotification(response.mensagem, 'sucesso');
+            // Recarregar anexos
+            const anexosResponse = await AnexosAPI.listar(currentTarefaId);
+            renderizarAnexosTrello(anexosResponse.sucesso ? anexosResponse.dados : []);
+        } else {
+            showNotification(response.mensagem, 'erro');
+        }
+    } catch (error) {
+        console.error('Erro ao excluir anexo:', error);
+        showNotification('Erro ao excluir anexo', 'erro');
+    } finally {
+        hideLoading();
+    }
+};
+
+window.verImagemAnexo = function(url) {
+    window.open(url, '_blank');
+};
+
+// ========================================
+// FUNÇÕES DE AÇÕES
+// ========================================
+
+window.editarTarefaTrello = function() {
+    fecharModalTrello();
+    editarTarefa(currentTarefaId);
+};
+
+window.excluirTarefaTrello = async function() {
+    if (!confirm('Tem certeza que deseja excluir esta tarefa?')) return;
+
+    try {
+        showLoading('Excluindo tarefa...');
+        const response = await TarefasAPI.excluir(currentTarefaId);
+
+        if (response.sucesso) {
+            showNotification(response.mensagem, 'sucesso');
+            fecharModalTrello();
+        } else {
+            showNotification(response.mensagem, 'erro');
+        }
+    } catch (error) {
+        console.error('Erro ao excluir tarefa:', error);
+        showNotification('Erro ao excluir tarefa', 'erro');
+    } finally {
+        hideLoading();
+    }
+};
+
 // Exportar funções para window (onclick compatibility)
 if (typeof window !== 'undefined') {
     window.abrirFormularioNovaTarefa = abrirFormularioNovaTarefa;
-    window.abrirDetalhesTarefa = abrirDetalhesTarefa;
+    window.abrirDetalhesTarefa = abrirModalTrello; // Usar modal Trello por padrão
+    window.abrirModalTrello = abrirModalTrello;
+    window.fecharModalTrello = fecharModalTrello;
     window.editarTarefa = editarTarefa;
     window.excluirTarefa = excluirTarefa;
     window.salvarTarefa = salvarTarefa;
