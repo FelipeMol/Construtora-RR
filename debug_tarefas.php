@@ -14,14 +14,16 @@ header('Content-Type: text/plain');
 function line($msg) { echo $msg, PHP_EOL; }
 
 function checkTable(PDO $pdo, $table) {
-    $stmt = $pdo->prepare("SHOW TABLES LIKE ?");
-    $stmt->execute([$table]);
+    $tableQuoted = $pdo->quote($table);
+    $stmt = $pdo->query("SHOW TABLES LIKE {$tableQuoted}");
     return (bool)$stmt->fetchColumn();
 }
 
 function checkColumn(PDO $pdo, $table, $col) {
-    $stmt = $pdo->prepare("SHOW COLUMNS FROM `$table` LIKE ?");
-    $stmt->execute([$col]);
+    $tableSafe = str_replace('`', '', $table);
+    $colQuoted = $pdo->quote($col);
+    $sql = "SHOW COLUMNS FROM `{$tableSafe}` LIKE {$colQuoted}";
+    $stmt = $pdo->query($sql);
     return (bool)$stmt->fetchColumn();
 }
 

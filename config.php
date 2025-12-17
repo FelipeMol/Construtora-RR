@@ -334,6 +334,26 @@ function requer_permissao($modulo_nome, $acao) {
 }
 
 /**
+ * Obter dados completos do usuário autenticado
+ */
+function obter_usuario_autenticado() {
+    global $pdo;
+
+    $payload = requer_autenticacao();
+
+    $stmt = $pdo->prepare("SELECT id, nome, email, tipo, ativo, token_versao FROM usuarios WHERE id = ?");
+    $stmt->execute([$payload['id']]);
+    $usuario = $stmt->fetch();
+
+    if (!$usuario) {
+        http_response_code(401);
+        resposta_json(false, null, 'Usuário não encontrado');
+    }
+
+    return $usuario;
+}
+
+/**
  * Obter permissões de um usuário (todas as permissões de todos os módulos)
  * @param PDO $pdo
  * @param int $usuario_id
