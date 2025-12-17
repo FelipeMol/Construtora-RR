@@ -12,6 +12,7 @@ import { ehAdmin as verificarEhAdmin, temPermissao, obterUsuario } from './auth.
 
 // Estado local do módulo
 let currentUsuario = null;
+let isSavingTarefa = false; // Proteção contra double-submit
 
 /**
  * Inicializar módulo de tarefas
@@ -196,11 +197,20 @@ export function abrirFormularioNovaTarefa() {
 export async function salvarTarefa(event) {
     if (event) event.preventDefault();
 
+    // Proteção contra submissão duplicada
+    if (isSavingTarefa) {
+        console.warn('⚠️ Submissão já em andamento, ignorando duplicata');
+        return;
+    }
+
     const form = document.getElementById('form-tarefa');
     if (!form) return;
 
     const tarefaId = form.dataset.tarefaId;
     const isEdicao = !!tarefaId;
+
+    // Ativar flag de proteção
+    isSavingTarefa = true;
 
     // Coletar dados do formulário
     const dados = {
@@ -217,16 +227,19 @@ export async function salvarTarefa(event) {
     // Validações
     if (!dados.titulo) {
         showNotification(MESSAGES.TAREFAS.ERROR.TITLE_REQUIRED, 'erro');
+        isSavingTarefa = false;
         return;
     }
 
     if (dados.titulo.length < 3) {
         showNotification(MESSAGES.TAREFAS.ERROR.TITLE_MIN_LENGTH, 'erro');
+        isSavingTarefa = false;
         return;
     }
 
     if (!dados.usuario_responsavel_id) {
         showNotification('Selecione um usuário responsável', 'erro');
+        isSavingTarefa = false;
         return;
     }
 
@@ -256,6 +269,8 @@ export async function salvarTarefa(event) {
         showNotification(MESSAGES.ERROR.GENERIC, 'erro');
     } finally {
         hideLoading();
+        // Resetar flag de proteção
+        isSavingTarefa = false;
     }
 }
 
