@@ -379,3 +379,18 @@ export function gerarAvatar(nome) {
 
     return (palavras[0][0] + palavras[palavras.length - 1][0]).toUpperCase();
 }
+
+/**
+ * Formata tamanho de arquivo em bytes para formato legível
+ * @param {number} bytes - Tamanho em bytes
+ * @returns {string} - Tamanho formatado (ex: "1.5 MB")
+ */
+export function formatarTamanhoArquivo(bytes) {
+    if (!bytes || bytes === 0) return '0 Bytes';
+
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+}
