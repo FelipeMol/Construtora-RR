@@ -1267,6 +1267,128 @@ window.excluirTarefaTrello = async function() {
     }
 };
 
+// ========================================
+// AÇÕES TRELLO (mover, copiar, comentar, criar em coluna)
+// ========================================
+
+const STATUS_MAP = {
+    'Pendente': 'novo',
+    'Em Progresso': 'em_andamento',
+    'Concluído': 'concluido',
+    'Cancelado': 'cancelado'
+};
+
+function mapStatusLabelToCode(labelOuCode) {
+    // Se já for um dos códigos, retorna direto
+    const lower = (labelOuCode || '').toLowerCase();
+    const codes = ['novo', 'em_andamento', 'concluido', 'cancelado'];
+    if (codes.includes(lower)) return lower;
+    return STATUS_MAP[labelOuCode] || 'novo';
+}
+
+window.novaTarefaNaColuna = function(statusLabel) {
+    const statusCode = mapStatusLabelToCode(statusLabel);
+    abrirFormularioNovaTarefa();
+    const statusSelect = document.getElementById('tarefa-status');
+    if (statusSelect) statusSelect.value = statusCode;
+};
+
+window.moverTarefaTrello = async function(novoStatusOpcional) {
+    const select = document.getElementById('trello-mover-status');
+    const statusSelecionado = novoStatusOpcional || select?.value;
+    const novoStatus = mapStatusLabelToCode(statusSelecionado);
+
+    if (!novoStatus) {
+        showNotification('Selecione o status de destino', 'erro');
+        return;
+    }
+
+    try {
+        showLoading('Movendo tarefa...');
+        const response = await TarefasAPI.atualizar(currentTarefaId, { status: novoStatus });
+        if (response.sucesso) {
+            showNotification('Tarefa movida', 'sucesso');
+            await carregarTarefas();
+            await abrirModalTrello(currentTarefaId); // reidrata modal
+        } else {
+            showNotification(response.mensagem || 'Erro ao mover tarefa', 'erro');
+        }
+    } catch (error) {
+        console.error('Erro ao mover tarefa:', error);
+        showNotification('Erro ao mover tarefa', 'erro');
+    } finally {
+        hideLoading();
+    }
+};
+
+window.copiarTarefaTrello = async function() {
+    const tarefa = tarefasActions.findById(currentTarefaId);
+    if (!tarefa) {
+        showNotification('Tarefa não encontrada', 'erro');
+        return;
+    }
+
+    const payload = {
+        titulo: `${tarefa.titulo} (cópia)`,
+        descricao: tarefa.descricao || '',
+        status: 'novo',
+        prioridade: tarefa.prioridade || 'media',
+        funcionario_id: tarefa.funcionario_id || null,
+        usuario_responsavel_id: tarefa.usuario_responsavel_id || null,
+        obra_id: tarefa.obra_id || null,
+        empresa_id: tarefa.empresa_id || null,
+        data_prazo: tarefa.data_prazo || null
+    };
+
+    try {
+        showLoading('Copiando tarefa...');
+        const response = await TarefasAPI.criar(payload);
+        if (response.sucesso) {
+            showNotification('Tarefa copiada', 'sucesso');
+            await carregarTarefas();
+        } else {
+            showNotification(response.mensagem || 'Erro ao copiar tarefa', 'erro');
+        }
+    } catch (error) {
+        console.error('Erro ao copiar tarefa:', error);
+        showNotification('Erro ao copiar tarefa', 'erro');
+    } finally {
+        hideLoading();
+    }
+};
+
+window.adicionarComentarioTrello = async function() {
+    const textarea = document.getElementById('trello-novo-comentario') || document.getElementById('novo-comentario');
+    if (!textarea) return;
+
+    const comentario = textarea.value.trim();
+    if (!comentario) {
+        showNotification('Digite um comentário', 'erro');
+        return;
+    }
+
+    try {
+        showLoading('Adicionando comentário...');
+        const response = await ComentariosAPI.criar({
+            tarefa_id: currentTarefaId,
+            comentario
+        });
+
+        if (response.sucesso) {
+            showNotification('Comentário adicionado', 'sucesso');
+            textarea.value = '';
+            await carregarComentarios(currentTarefaId);
+        } else {
+            showNotification(response.mensagem || 'Erro ao adicionar comentário', 'erro');
+        }
+    } catch (error) {
+        console.error('Erro ao adicionar comentário:', error);
+        showNotification('Erro ao adicionar comentário', 'erro');
+    } finally {
+        hideLoading();
+    }
+};
+
 // Exportar funções para window (onclick compatibility)
 if (typeof window !== 'undefined') {
     window.abrirFormularioNovaTarefa = abrirFormularioNovaTarefa;
