@@ -1,7 +1,14 @@
 <?php
-// debug_tarefas.php
+// debug_tarefas.php - diagnostico rápido para aba Trello
+
+// Força exibição de erros no output
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 require __DIR__ . '/config.php';
 
+// Sobrescreve content-type para texto simples
 header('Content-Type: text/plain');
 
 function line($msg) { echo $msg, PHP_EOL; }
@@ -56,5 +63,9 @@ try {
 } catch (Exception $e) {
     line('Erro membros: ' . $e->getMessage());
 }
+
+line(PHP_EOL . '=== Se nada apareceu acima ===');
+line('- Confirme se acessou a URL correta do debug_tarefas.php');
+line('- Se ainda vazar em branco, veja php_errors.log no servidor');
 
 line(PHP_EOL . '=== Fim ===');
