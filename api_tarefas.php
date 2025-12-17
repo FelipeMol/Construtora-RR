@@ -216,7 +216,8 @@ function criarTarefa($pdo, $usuario) {
         obra_id,
         empresa_id,
         data_prazo,
-        criado_por
+        criado_por,
+        posicao_coluna
     ) VALUES (
         :titulo,
         :descricao,
@@ -227,7 +228,8 @@ function criarTarefa($pdo, $usuario) {
         :obra_id,
         :empresa_id,
         :data_prazo,
-        :criado_por
+        :criado_por,
+        :posicao_coluna
     )";
 
     $stmt = $pdo->prepare($sql);
@@ -241,7 +243,8 @@ function criarTarefa($pdo, $usuario) {
         ':obra_id' => !empty($dados['obra_id']) ? $dados['obra_id'] : null,
         ':empresa_id' => !empty($dados['empresa_id']) ? $dados['empresa_id'] : null,
         ':data_prazo' => !empty($dados['data_prazo']) ? $dados['data_prazo'] : null,
-        ':criado_por' => $usuario['id']
+        ':criado_por' => $usuario['id'],
+        ':posicao_coluna' => isset($dados['posicao_coluna']) ? $dados['posicao_coluna'] : 0
     ]);
 
     if ($result) {

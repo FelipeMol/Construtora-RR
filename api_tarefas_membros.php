@@ -42,8 +42,7 @@ switch ($metodo) {
                     tm.papel,
                     tm.criado_em,
                     u.nome AS usuario_nome,
-                    u.email AS usuario_email,
-                    u.avatar AS usuario_avatar
+                    u.email AS usuario_email
                 FROM tarefas_membros tm
                 INNER JOIN usuarios u ON tm.usuario_id = u.id
                 WHERE tm.tarefa_id = ?
@@ -153,8 +152,7 @@ switch ($metodo) {
                 SELECT
                     tm.*,
                     u.nome AS usuario_nome,
-                    u.email AS usuario_email,
-                    u.avatar AS usuario_avatar
+                    u.email AS usuario_email
                 FROM tarefas_membros tm
                 INNER JOIN usuarios u ON tm.usuario_id = u.id
                 WHERE tm.id = ?
@@ -243,8 +241,7 @@ switch ($metodo) {
                 SELECT
                     tm.*,
                     u.nome AS usuario_nome,
-                    u.email AS usuario_email,
-                    u.avatar AS usuario_avatar
+                    u.email AS usuario_email
                 FROM tarefas_membros tm
                 INNER JOIN usuarios u ON tm.usuario_id = u.id
                 WHERE tm.id = ?
