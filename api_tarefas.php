@@ -119,11 +119,14 @@ function listarTarefas($pdo, $usuario, $ehAdmin) {
     $where = [];
     $params = [];
 
-    // Non-admin: filtrar por usuário responsável
+    // Non-admin: ver apenas tarefas onde é responsável direto, criador ou membro
     if (!$ehAdmin) {
-        // Usuário comum só vê tarefas atribuídas a ele
-        $where[] = "t.usuario_responsavel_id = :usuario_responsavel_id";
-        $params[':usuario_responsavel_id'] = $usuario['id'];
+        $where[] = "(
+            t.usuario_responsavel_id = :usuario_id
+            OR t.funcionario_id = :usuario_id
+            OR EXISTS (SELECT 1 FROM tarefas_membros tm WHERE tm.tarefa_id = t.id AND tm.usuario_id = :usuario_id)
+        )";
+        $params[':usuario_id'] = $usuario['id'];
     }
 
     // Filtro por funcionário (query param) - mantido para compatibilidade

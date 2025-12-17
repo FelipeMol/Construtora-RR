@@ -11,6 +11,28 @@ require_once __DIR__ . '/config.php';
 // Middleware de autenticação
 requer_autenticacao();
 
+/**
+ * Reuso de verificação de acesso: admin, responsável direto ou membro
+ */
+function usuario_tem_acesso_tarefa($pdo, $usuario, $tarefa_id) {
+    if ($usuario['tipo'] === 'admin') return true;
+
+    $stmt = $pdo->prepare("SELECT funcionario_id, usuario_responsavel_id FROM tarefas WHERE id = ?");
+    $stmt->execute([$tarefa_id]);
+    $tarefa = $stmt->fetch();
+    if (!$tarefa) {
+        resposta_json(false, null, 'Tarefa não encontrada');
+    }
+
+    if ($tarefa['funcionario_id'] == $usuario['id'] || $tarefa['usuario_responsavel_id'] == $usuario['id']) {
+        return true;
+    }
+
+    $stmt = $pdo->prepare("SELECT 1 FROM tarefas_membros WHERE tarefa_id = ? AND usuario_id = ? LIMIT 1");
+    $stmt->execute([$tarefa_id, $usuario['id']]);
+    return (bool) $stmt->fetchColumn();
+}
+
 $metodo = $_SERVER['REQUEST_METHOD'];
 
 switch ($metodo) {
@@ -25,12 +47,9 @@ switch ($metodo) {
         $tarefa_id = intval($_GET['tarefa_id']);
 
         try {
-            // Verificar se tarefa existe
-            $stmt = $pdo->prepare("SELECT id FROM tarefas WHERE id = ?");
-            $stmt->execute([$tarefa_id]);
-
-            if (!$stmt->fetch()) {
-                resposta_json(false, null, 'Tarefa não encontrada');
+            // Verificar se tarefa existe e se usuário tem acesso (admin, responsável ou membro)
+            if (!usuario_tem_acesso_tarefa($pdo, obter_usuario_autenticado(), $tarefa_id)) {
+                resposta_json(false, null, 'Você não tem permissão para ver estes membros');
             }
 
             // Buscar membros da tarefa

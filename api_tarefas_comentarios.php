@@ -73,26 +73,11 @@ function listarComentarios($pdo, $usuario) {
         return;
     }
 
-    // Verificar se tarefa existe e se usuário tem acesso
-    $ehAdmin = $usuario['tipo'] === 'admin';
-
-    if (!$ehAdmin) {
-        // Usuário comum só vê comentários de suas próprias tarefas
-        $stmt = $pdo->prepare("SELECT funcionario_id FROM tarefas WHERE id = :tarefa_id");
-        $stmt->execute([':tarefa_id' => $tarefaId]);
-        $tarefa = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if (!$tarefa) {
-            http_response_code(404);
-            resposta_json(false, null, 'Tarefa não encontrada');
-            return;
-        }
-
-        if ($tarefa['funcionario_id'] != $usuario['id']) {
-            http_response_code(403);
-            resposta_json(false, null, 'Você não tem permissão para ver estes comentários');
-            return;
-        }
+    // Verificar se tarefa existe e se usuário tem acesso (admin, responsável ou membro)
+    if (!usuarioTemAcessoATarefa($pdo, $usuario, $tarefaId)) {
+        http_response_code(403);
+        resposta_json(false, null, 'Você não tem permissão para ver estes comentários');
+        return;
     }
 
     $sql = "
@@ -138,26 +123,11 @@ function criarComentario($pdo, $usuario) {
         return;
     }
 
-    // Verificar se tarefa existe e se usuário tem acesso
-    $ehAdmin = $usuario['tipo'] === 'admin';
-
-    if (!$ehAdmin) {
-        // Usuário comum só pode comentar em suas próprias tarefas
-        $stmt = $pdo->prepare("SELECT funcionario_id FROM tarefas WHERE id = :tarefa_id");
-        $stmt->execute([':tarefa_id' => $dados['tarefa_id']]);
-        $tarefa = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if (!$tarefa) {
-            http_response_code(404);
-            resposta_json(false, null, 'Tarefa não encontrada');
-            return;
-        }
-
-        if ($tarefa['funcionario_id'] != $usuario['id']) {
-            http_response_code(403);
-            resposta_json(false, null, 'Você não tem permissão para comentar nesta tarefa');
-            return;
-        }
+    // Verificar se tarefa existe e se usuário tem acesso (admin, responsável ou membro)
+    if (!usuarioTemAcessoATarefa($pdo, $usuario, $dados['tarefa_id'])) {
+        http_response_code(403);
+        resposta_json(false, null, 'Você não tem permissão para comentar nesta tarefa');
+        return;
     }
 
     $sql = "INSERT INTO tarefas_comentarios (
@@ -198,6 +168,37 @@ function criarComentario($pdo, $usuario) {
         http_response_code(500);
         resposta_json(false, null, 'Erro ao adicionar comentário');
     }
+}
+
+/**
+ * Verifica se usuário pode acessar a tarefa (admin, responsável direto ou membro associado)
+ */
+function usuarioTemAcessoATarefa($pdo, $usuario, $tarefaId) {
+    if ($usuario['tipo'] === 'admin') return true;
+
+    // Responsável direto ou criador (funcionario_id ou usuario_responsavel_id)
+    $stmt = $pdo->prepare("SELECT funcionario_id, usuario_responsavel_id FROM tarefas WHERE id = :tarefa_id");
+    $stmt->execute([':tarefa_id' => $tarefaId]);
+    $tarefa = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$tarefa) {
+        http_response_code(404);
+        resposta_json(false, null, 'Tarefa não encontrada');
+        return false;
+    }
+
+    if ($tarefa['funcionario_id'] == $usuario['id'] || $tarefa['usuario_responsavel_id'] == $usuario['id']) {
+        return true;
+    }
+
+    // Membro associado
+    $stmt = $pdo->prepare("SELECT id FROM tarefas_membros WHERE tarefa_id = :tarefa_id AND usuario_id = :usuario_id");
+    $stmt->execute([':tarefa_id' => $tarefaId, ':usuario_id' => $usuario['id']]);
+    if ($stmt->fetch()) {
+        return true;
+    }
+
+    return false;
 }
 
 /**
