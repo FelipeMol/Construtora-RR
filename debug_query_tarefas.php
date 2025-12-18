@@ -40,11 +40,13 @@ try {
     // Non-admin: ver apenas tarefas onde é responsável, criador ou membro
     if (!$ehAdmin) {
         $where[] = "(
-            t.usuario_responsavel_id = :usuario_id
-            OR t.criado_por = :usuario_id
-            OR EXISTS (SELECT 1 FROM tarefas_membros tm WHERE tm.tarefa_id = t.id AND tm.usuario_id = :usuario_id)
+            t.usuario_responsavel_id = :usuario_id_resp
+            OR t.criado_por = :usuario_id_criador
+            OR EXISTS (SELECT 1 FROM tarefas_membros tm WHERE tm.tarefa_id = t.id AND tm.usuario_id = :usuario_id_membro)
         )";
-        $params[':usuario_id'] = $usuario_id;
+        $params[':usuario_id_resp'] = $usuario_id;
+        $params[':usuario_id_criador'] = $usuario_id;
+        $params[':usuario_id_membro'] = $usuario_id;
     }
 
     // Aplicar filtros WHERE
